@@ -25,13 +25,3 @@ int str_cmp_nocase(const char* a, unsigned sa, const char* b, unsigned sb, unsig
   }
   return (1);
 }
-
-//token_split("\"je suis\" un chat", "\"", ' ');
-//"je suis", "un", "chat"
-char** token_split(const char* str, const char* tokens, char c)
-{
-  char** array;
-
-
-  return (array);
-}

@@ -44,6 +44,26 @@ bytes_t* b_appc(bytes_t* bytes, char c)
   return (bytes);
 }
 
+bytes_t* b_erase(bytes_t* bytes, unsigned pos, unsigned count)
+{
+  if (!_b_valid(bytes, &pos, &count))
+    return (bytes);
+  memmove(bytes->array + pos, bytes->array + pos + count, bytes->size - (pos + count));
+  bytes->size -= count;
+  return (bytes);
+}
+
+char* b_to_str(bytes_t* bytes)
+{
+  char *str;
+
+  if ((str = malloc(bytes->size + 1)) == NULL)
+    return (NULL);
+  memcpy(str, bytes->array, bytes->size);
+  str[bytes->size] = 0;
+  return (str);
+}
+
 //TODO Redo that, cleaner:
 //0: standard print, 1: byte list
 void b_print(bytes_t* bytes, FILE* f, char mode)
@@ -99,4 +119,18 @@ int _b_alloc(bytes_t* bytes, unsigned size)
   if (bytes == NULL)
     return (0);
   return (size ? _b_realloc(bytes, bytes->size + size) : 1);
+}
+
+int _b_valid(bytes_t* bytes, unsigned* pos, unsigned* count)
+{
+  if (*pos + *count < bytes->size) //If inside of bytes
+    return (1);
+  if (*pos >= bytes->size)
+  {
+    *pos = 0;
+    *count = 0;
+    return (0);
+  }
+  *count = bytes->size - *pos;
+  return (1);
 }

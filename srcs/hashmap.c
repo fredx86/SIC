@@ -14,7 +14,7 @@ hashmap_t* h_create(uint32_t size, hash_func func, uint8_t type)
   return (map);
 }
 
-hashmap_t* h_add(hashmap_t* map, void* key, void* value)
+hashmap_t* h_add(hashmap_t* map, const void* key, void* value)
 {
   uint32_t index, r;
   struct s_bucket* tmp;
@@ -30,12 +30,12 @@ hashmap_t* h_add(hashmap_t* map, void* key, void* value)
   return (map);
 }
 
-int h_has(hashmap_t* map, void* key)
+int h_has(hashmap_t* map, const void* key)
 {
   return (_h_find(NULL, map->buckets[_H_IDX(map, key)], key, map->key_type) == 0);
 }
 
-void* h_get(hashmap_t* map, void* key)
+void* h_get(hashmap_t* map, const void* key)
 {
   struct s_bucket* tmp;
 
@@ -71,7 +71,7 @@ void h_destroy(hashmap_t* map)
 //Return 0 if bucket w/ same key is found, 1 if not found, 2 if the bucket is empty
 //If found, then 'ret' parameter is set to the matching bucket
 //Otherwise, parameter is set to the last non-null element of the list
-int _h_find(struct s_bucket** ret, struct s_bucket* bucket, void* key, uint8_t type)
+int _h_find(struct s_bucket** ret, struct s_bucket* bucket, const void* key, uint8_t type)
 {
   char found = (bucket ? 1 : 2);
 
@@ -91,7 +91,7 @@ int _h_find(struct s_bucket** ret, struct s_bucket* bucket, void* key, uint8_t t
   return (found);
 }
 
-struct s_bucket* _h_add(hashmap_t* map, uint32_t index, struct s_bucket* insert, void* key, void* value)
+struct s_bucket* _h_add(hashmap_t* map, uint32_t index, struct s_bucket* insert, const void* key, void* value)
 {
   struct s_bucket* bucket;
 
@@ -111,22 +111,22 @@ struct s_bucket* _h_add(hashmap_t* map, uint32_t index, struct s_bucket* insert,
   return (bucket);
 }
 
-unsigned _h_key_size(void* key, uint8_t type)
+unsigned _h_key_size(const void* key, uint8_t type)
 {
   switch (type)
   {
-    case K_STRING:  return (strlen((const char*)key));
-    case K_PTR:     return (sizeof(key));
+    case KY_STRING:  return (strlen((const char*)key));
+    case KY_PTR:     return (sizeof(key));
   }
   return (1);
 }
 
-int _h_key_cmp(void* x, void* y, uint8_t type)
+int _h_key_cmp(const void* x, const void* y, uint8_t type)
 {
   switch (type)
   {
-    case K_STRING:  return (strcmp((const char*)x, (const char*)y) == 0);
-    case K_PTR:     return (x == y);
+    case KY_STRING:  return (strcmp((const char*)x, (const char*)y) == 0);
+    case KY_PTR:     return (x == y);
   }
   return (0);
 }

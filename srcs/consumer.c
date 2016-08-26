@@ -8,23 +8,31 @@ consumer_t* csmr_create(const char* str, unsigned size)
     return (NULL);
   if ((consumer->bytes = b_create(str, size)) == NULL)
     return (NULL);
-  if ((consumer->map = h_create(1024, &jenkins_hash, K_STRING)) == NULL)
+  if ((consumer->map = h_create(1024, &jenkins_hash, KY_STRING)) == NULL)
     return (NULL);
   consumer->_ptr = 0;
   return (consumer);
 }
 
+int csmr_read(consumer_t* consumer, char* c)
+{
+  if (_CSMR_IS_EOI(consumer))
+    return (0);
+  *c = _CSMR_CHAR(consumer);
+  return (_CSMR_INCR(consumer, 1));
+}
+
 int csmr_char(consumer_t* consumer, char c)
 {
   if (!_CSMR_IS_EOI(consumer) && _CSMR_CHAR(consumer) == c)
-    return (_csmr_incr(consumer, 1));
+    return (_CSMR_INCR(consumer, 1));
   return (0);
 }
 
 int csmr_func(consumer_t* consumer, int (*func)(int))
 {
   if (!_CSMR_IS_EOI(consumer) && func(_CSMR_CHAR(consumer)))
-    return (_csmr_incr(consumer, 1));
+    return (_CSMR_INCR(consumer, 1));
   return (0);
 }
 
@@ -35,16 +43,31 @@ int csmr_of(consumer_t* consumer, const char* chars)
   while (*chars)
   {
     if (_CSMR_CHAR(consumer) == *chars)
-      return (_csmr_incr(consumer, 1));
+      return (_CSMR_INCR(consumer, 1));
     ++chars;
   }
   return (0);
 }
 
+int csmr_some(consumer_t* consumer, const char* chars)
+{
+  int has_csmed = 0;
+
+  while (*chars)
+  {
+    if (_CSMR_IS_EOI(consumer))
+      return (has_csmed);
+    if (_CSMR_CHAR(consumer) == *chars)
+      has_csmed = ++consumer->_ptr;
+    ++chars;
+  }
+  return (has_csmed);
+}
+
 int csmr_range(consumer_t* consumer, char x, char y)
 {
   if (!_CSMR_IS_EOI(consumer) && _CSMR_CHAR(consumer) >= x && _CSMR_CHAR(consumer) <= y)
-    return (_csmr_incr(consumer, 1));
+    return (_CSMR_INCR(consumer, 1));
   return (0);
 }
 
@@ -54,7 +77,7 @@ int csmr_txt(consumer_t* consumer, const char* text, int nocase)
   str_cmp_func cmp[] = { &str_cmp, &str_cmp_nocase };
   
   if (cmp[nocase ? 1 : 0](_CSMR_STR(consumer), consumer->bytes->size, text, size, size))
-    return (_csmr_incr(consumer, size));
+    return (_CSMR_INCR(consumer, size));
   return (0);
 }
 
@@ -78,6 +101,14 @@ int csmr_alphanum(consumer_t* consumer)
   );
 }
 
+int csmr_identifier(consumer_t* consumer)
+{
+  if (!(csmr_alpha(consumer) || csmr_char(consumer, '_')))
+    return (0);
+  while (csmr_alphanum(consumer) || csmr_char(consumer, '_'));
+  return (1);
+}
+
 int csmr_whitespace(consumer_t* consumer)
 {
   return (csmr_func(consumer, &isspace));
@@ -93,7 +124,7 @@ int csmr_print(consumer_t* consumer)
 int csmr_tkn(consumer_t* consumer, char start_token, char end_token)
 {
   char escape = 0;
-  unsigned save = consumer->_ptr;
+  intptr_t save = consumer->_ptr;
 
   if (_CSMR_IS_EOI(consumer) || _CSMR_CHAR(consumer) != start_token)
     return (0);
@@ -101,7 +132,7 @@ int csmr_tkn(consumer_t* consumer, char start_token, char end_token)
   while (!_CSMR_IS_EOI(consumer))
   {
     if (_CSMR_CHAR(consumer) == end_token && !escape)
-      return (_csmr_incr(consumer, 1));
+      return (_CSMR_INCR(consumer, 1));
     escape = (_CSMR_CHAR(consumer) == '\\' ? 1 : 0);
     ++consumer->_ptr;
   }

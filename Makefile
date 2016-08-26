@@ -2,6 +2,7 @@ SRCS			=	srcs/main.c 				\
 						srcs/bytes.c 				\
 						srcs/consumer.c 		\
 						srcs/hashmap.c      \
+						srcs/sbnf.c         \
 						srcs/str_utils.c 		\
 
 OBJS			= $(SRCS:.c=.o)
