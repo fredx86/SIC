@@ -1,160 +1,168 @@
 #include "consumer.h"
 
-consumer_t* csmr_create(const char* str, unsigned size)
+sc_consumer_t* sc_ccreate(const char* str, unsigned size)
 {
-  consumer_t* consumer;
+  sc_consumer_t* consumer;
 
   if ((consumer = malloc(sizeof(*consumer))) == NULL)
-    return (NULL);
-  if ((consumer->bytes = b_create(str, size)) == NULL)
-    return (NULL);
-  if ((consumer->map = h_create(1024, &jenkins_hash, KY_STRING)) == NULL)
-    return (NULL);
+    sc_ferr(1, "malloc() -> sc_ccreate()");
+  consumer->bytes = sc_bcreate(str, size);
+  printf("%u\n", size);
+  fflush(stdout);
+  consumer->map = sc_hcreate(1024, &sc_jenkins_hash, SIC_KY_STRING);
   consumer->_ptr = 0;
   return (consumer);
 }
 
-int csmr_read(consumer_t* consumer, char* c)
+int sc_cread(sc_consumer_t* consumer, char* c)
 {
-  if (_CSMR_IS_EOI(consumer))
+  if (SIC_CSMR_IS_EOI(consumer))
     return (0);
-  *c = _CSMR_CHAR(consumer);
-  return (_CSMR_INCR(consumer, 1));
+  *c = SIC_CSMR_CHAR(consumer);
+  return (SIC_CSMR_INCR(consumer, 1));
 }
 
-int csmr_char(consumer_t* consumer, char c)
+int sc_cchar(sc_consumer_t* consumer, char c)
 {
-  if (!_CSMR_IS_EOI(consumer) && _CSMR_CHAR(consumer) == c)
-    return (_CSMR_INCR(consumer, 1));
+  if (!SIC_CSMR_IS_EOI(consumer) && SIC_CSMR_CHAR(consumer) == c)
+    return (SIC_CSMR_INCR(consumer, 1));
   return (0);
 }
 
-int csmr_func(consumer_t* consumer, int (*func)(int))
+int sc_cfunc(sc_consumer_t* consumer, int (*func)(int))
 {
-  if (!_CSMR_IS_EOI(consumer) && func(_CSMR_CHAR(consumer)))
-    return (_CSMR_INCR(consumer, 1));
+  if (!SIC_CSMR_IS_EOI(consumer) && func(SIC_CSMR_CHAR(consumer)))
+    return (SIC_CSMR_INCR(consumer, 1));
   return (0);
 }
 
-int csmr_of(consumer_t* consumer, const char* chars)
+int sc_cof(sc_consumer_t* consumer, const char* chars)
 {
-  if (_CSMR_IS_EOI(consumer))
+  if (SIC_CSMR_IS_EOI(consumer))
     return (0);
   while (*chars)
   {
-    if (_CSMR_CHAR(consumer) == *chars)
-      return (_CSMR_INCR(consumer, 1));
+    if (SIC_CSMR_CHAR(consumer) == *chars)
+      return (SIC_CSMR_INCR(consumer, 1));
     ++chars;
   }
   return (0);
 }
 
-int csmr_some(consumer_t* consumer, const char* chars)
+int sc_csome(sc_consumer_t* consumer, const char* chars)
 {
   int has_csmed = 0;
 
   while (*chars)
   {
-    if (_CSMR_IS_EOI(consumer))
+    if (SIC_CSMR_IS_EOI(consumer))
       return (has_csmed);
-    if (_CSMR_CHAR(consumer) == *chars)
+    if (SIC_CSMR_CHAR(consumer) == *chars)
       has_csmed = ++consumer->_ptr;
     ++chars;
   }
   return (has_csmed);
 }
 
-int csmr_range(consumer_t* consumer, char x, char y)
+int sc_crange(sc_consumer_t* consumer, char x, char y)
 {
-  if (!_CSMR_IS_EOI(consumer) && _CSMR_CHAR(consumer) >= x && _CSMR_CHAR(consumer) <= y)
-    return (_CSMR_INCR(consumer, 1));
+  if (!SIC_CSMR_IS_EOI(consumer) && SIC_CSMR_CHAR(consumer) >= x && SIC_CSMR_CHAR(consumer) <= y)
+    return (SIC_CSMR_INCR(consumer, 1));
   return (0);
 }
 
-int csmr_txt(consumer_t* consumer, const char* text, int nocase)
+int sc_ctxt(sc_consumer_t* consumer, const char* text, int nocase)
 {
   unsigned size = strlen(text);
-  str_cmp_func cmp[] = { &str_cmp, &str_cmp_nocase };
+  sc_strcmp_func cmp[] = { &sc_strcmp, &sc_ncstrcmp };
   
-  if (cmp[nocase ? 1 : 0](_CSMR_STR(consumer), consumer->bytes->size, text, size, size))
-    return (_CSMR_INCR(consumer, size));
+  if (cmp[nocase ? 1 : 0](SIC_CSMR_STR(consumer), consumer->bytes->size, text, size, size))
+    return (SIC_CSMR_INCR(consumer, size));
   return (0);
 }
 
-int csmr_digit(consumer_t* consumer)
+int sc_cdigit(sc_consumer_t* consumer)
 {
-  return (csmr_range(consumer, '0', '9'));
+  return (sc_crange(consumer, '0', '9'));
 }
 
-int csmr_alpha(consumer_t* consumer)
+int sc_calpha(sc_consumer_t* consumer)
 {
-  return (csmr_range(consumer, 'a', 'z') ||
-    csmr_range(consumer, 'A', 'Z')
+  return (sc_crange(consumer, 'a', 'z') ||
+    sc_crange(consumer, 'A', 'Z')
   );
 }
 
-int csmr_alphanum(consumer_t* consumer)
+int sc_calphanum(sc_consumer_t* consumer)
 {
-  return (csmr_range(consumer, 'a', 'z') ||
-    csmr_range(consumer, 'A', 'Z') ||
-    csmr_range(consumer, '0', '9')
+  return (sc_crange(consumer, 'a', 'z') ||
+    sc_crange(consumer, 'A', 'Z') ||
+    sc_crange(consumer, '0', '9')
   );
 }
 
-int csmr_identifier(consumer_t* consumer)
+int sc_cidentifier(sc_consumer_t* consumer)
 {
-  if (!(csmr_alpha(consumer) || csmr_char(consumer, '_')))
+  if (!(sc_calpha(consumer) || sc_cchar(consumer, '_')))
     return (0);
-  while (csmr_alphanum(consumer) || csmr_char(consumer, '_'));
+  while (sc_calphanum(consumer) || sc_cchar(consumer, '_'));
   return (1);
 }
 
-int csmr_whitespace(consumer_t* consumer)
+int sc_cwhitespace(sc_consumer_t* consumer)
 {
-  return (csmr_func(consumer, &isspace));
+  return (sc_cfunc(consumer, &isspace));
 }
 
-int csmr_print(consumer_t* consumer)
+int sc_cprint(sc_consumer_t* consumer)
 {
-  return (csmr_func(consumer, &isprint));
+  return (sc_cfunc(consumer, &isprint));
 }
 
 //Consume everything between 2 tokens
 //Considers escape characters ('\')
-int csmr_tkn(consumer_t* consumer, char start_token, char end_token)
+int sc_ctkn(sc_consumer_t* consumer, char start_token, char end_token)
 {
   char escape = 0;
   intptr_t save = consumer->_ptr;
 
-  if (_CSMR_IS_EOI(consumer) || _CSMR_CHAR(consumer) != start_token)
+  if (SIC_CSMR_IS_EOI(consumer) || SIC_CSMR_CHAR(consumer) != start_token)
     return (0);
   ++consumer->_ptr;
-  while (!_CSMR_IS_EOI(consumer))
+  while (!SIC_CSMR_IS_EOI(consumer))
   {
-    if (_CSMR_CHAR(consumer) == end_token && !escape)
-      return (_CSMR_INCR(consumer, 1));
-    escape = (_CSMR_CHAR(consumer) == '\\' ? 1 : 0);
+    if (SIC_CSMR_CHAR(consumer) == end_token && !escape)
+      return (SIC_CSMR_INCR(consumer, 1));
+    escape = (SIC_CSMR_CHAR(consumer) == '\\' ? 1 : 0);
     ++consumer->_ptr;
   }
   consumer->_ptr = save;
   return (0);
 }
 
-int csmr_start(consumer_t* consumer, const char* id)
+int sc_cstart(sc_consumer_t* consumer, const char* id)
 {
-  return (h_add(consumer->map, (void*)id, (void*)consumer->_ptr) != NULL);
+  return (sc_hadd(consumer->map, (void*)id, (void*)consumer->_ptr) != NULL);
 }
 
-int csmr_end(consumer_t* consumer, const char* id, bytes_t** content)
+int sc_cendb(sc_consumer_t* consumer, const char* id, sc_bytes_t** content)
 {
-  intptr_t n = (intptr_t)h_get(consumer->map, (void*)id);
+  intptr_t n = (intptr_t)sc_hget(consumer->map, (void*)id);
+  return ((*content = sc_bcreate(consumer->bytes->array + n, consumer->_ptr - n)) != NULL);
+}
 
-  if ((*content = b_create(consumer->bytes->array + n, consumer->_ptr - n)) == NULL)
-    return (0);
+int sc_cends(sc_consumer_t* consumer, const char* id, char** content)
+{
+  intptr_t n = (intptr_t)sc_hget(consumer->map, (void*)id);
+
+  if ((*content = malloc(consumer->_ptr - n + 1)) == NULL)
+    sc_ferr(1, "malloc() -> sc_cends()");
+  memcpy(*content, consumer->bytes->array + n, consumer->_ptr - n);
+  (*content)[consumer->_ptr - n] = 0;
   return (1);
 }
 
-int _csmr_incr(consumer_t* consumer, unsigned n)
+int _sc_cincr(sc_consumer_t* consumer, unsigned n)
 {
   consumer->_ptr += n;
   return (1);

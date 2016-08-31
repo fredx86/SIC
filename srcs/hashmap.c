@@ -1,54 +1,51 @@
 #include "hashmap.h"
 
-hashmap_t* h_create(uint32_t size, hash_func func, uint8_t type)
+sc_hashmp_t* sc_hcreate(uint32_t size, sc_hashfunc func, uint8_t type)
 {
-  hashmap_t* map;
+  sc_hashmp_t* map;
 
   if ((map = malloc(sizeof(*map))) == NULL)
-    return (NULL);
+    sc_ferr(1, "malloc() -> sc_hcreate()");
   if ((map->buckets = calloc(size, sizeof(*map->buckets))) == NULL)
-    return (NULL);
+    sc_ferr(1, "calloc() -> sc_hcreate()");
   map->hash = func;
   map->key_type = type;
   map->size = size;
   return (map);
 }
 
-hashmap_t* h_add(hashmap_t* map, const void* key, void* value)
+sc_hashmp_t* sc_hadd(sc_hashmp_t* map, const void* key, void* value)
 {
   uint32_t index, r;
-  struct s_bucket* tmp;
+  struct sc_s_bcket* tmp;
 
-  index = _H_IDX(map, key);
-  if ((r = _h_find(&tmp, map->buckets[index], key, map->key_type)) == 0) //If found
+  index = SIC_HIDX(map, key);
+  if ((r = _sc_hfind(&tmp, map->buckets[index], key, map->key_type)) == 0) //If found
     tmp->val = value;
   else
-  {
-    if (_h_add(map, index, tmp, key, value) == NULL)
-      return (NULL);
-  }
+    _sc_hadd(map, index, tmp, key, value);
   return (map);
 }
 
-int h_has(hashmap_t* map, const void* key)
+int sc_hhas(sc_hashmp_t* map, const void* key)
 {
-  return (_h_find(NULL, map->buckets[_H_IDX(map, key)], key, map->key_type) == 0);
+  return (_sc_hfind(NULL, map->buckets[SIC_HIDX(map, key)], key, map->key_type) == 0);
 }
 
-void* h_get(hashmap_t* map, const void* key)
+void* sc_hget(sc_hashmp_t* map, const void* key)
 {
-  struct s_bucket* tmp;
+  struct sc_s_bcket* tmp;
 
-  if (_h_find(&tmp, map->buckets[_H_IDX(map, key)], key, map->key_type) == 0)
+  if (_sc_hfind(&tmp, map->buckets[SIC_HIDX(map, key)], key, map->key_type) == 0)
     return (tmp->val);
   return (NULL);
 }
 
-void h_destroy(hashmap_t* map)
+void sc_hdestroy(sc_hashmp_t* map)
 {
   uint32_t i = 0;
-  struct s_bucket *tmp;
-  struct s_bucket *tmp2;
+  struct sc_s_bcket *tmp;
+  struct sc_s_bcket *tmp2;
 
   while (i < map->size)
   {
@@ -71,13 +68,13 @@ void h_destroy(hashmap_t* map)
 //Return 0 if bucket w/ same key is found, 1 if not found, 2 if the bucket is empty
 //If found, then 'ret' parameter is set to the matching bucket
 //Otherwise, parameter is set to the last non-null element of the list
-int _h_find(struct s_bucket** ret, struct s_bucket* bucket, const void* key, uint8_t type)
+int _sc_hfind(struct sc_s_bcket** ret, struct sc_s_bcket* bucket, const void* key, uint8_t type)
 {
   char found = (bucket ? 1 : 2);
 
   while (bucket != NULL)
   {
-    if (_h_key_cmp(bucket->key, key, type))
+    if (_sc_hkey_cmp(bucket->key, key, type))
     {
       found = 0;
       break;
@@ -91,12 +88,12 @@ int _h_find(struct s_bucket** ret, struct s_bucket* bucket, const void* key, uin
   return (found);
 }
 
-struct s_bucket* _h_add(hashmap_t* map, uint32_t index, struct s_bucket* insert, const void* key, void* value)
+struct sc_s_bcket* _sc_hadd(sc_hashmp_t* map, uint32_t index, struct sc_s_bcket* insert, const void* key, void* value)
 {
-  struct s_bucket* bucket;
+  struct sc_s_bcket* bucket;
 
   if ((bucket = malloc(sizeof(*bucket))) == NULL)
-    return (NULL);
+    sc_ferr(1, "malloc() -> _sc_hadd()");
   bucket->key = key;
   bucket->val = value;
   bucket->next = NULL;
@@ -111,27 +108,27 @@ struct s_bucket* _h_add(hashmap_t* map, uint32_t index, struct s_bucket* insert,
   return (bucket);
 }
 
-unsigned _h_key_size(const void* key, uint8_t type)
+unsigned _sc_hkey_size(const void* key, uint8_t type)
 {
   switch (type)
   {
-    case KY_STRING:  return (strlen((const char*)key));
-    case KY_PTR:     return (sizeof(key));
+    case SIC_KY_STRING:  return (strlen((const char*)key));
+    case SIC_KY_PTR:     return (sizeof(key));
   }
   return (1);
 }
 
-int _h_key_cmp(const void* x, const void* y, uint8_t type)
+int _sc_hkey_cmp(const void* x, const void* y, uint8_t type)
 {
   switch (type)
   {
-    case KY_STRING:  return (strcmp((const char*)x, (const char*)y) == 0);
-    case KY_PTR:     return (x == y);
+    case SIC_KY_STRING:  return (strcmp((const char*)x, (const char*)y) == 0);
+    case SIC_KY_PTR:     return (x == y);
   }
   return (0);
 }
 
-uint32_t jenkins_hash(const char* key, unsigned len)
+uint32_t sc_jenkins_hash(const char* key, unsigned len)
 {
   uint32_t i = 0;
   uint32_t hash = 0;

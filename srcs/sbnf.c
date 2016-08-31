@@ -1,6 +1,6 @@
 #include "sbnf.h"
 
-static struct s_sbnf_rlint _int_rules[] = {
+static sbnf_intrl_t _int_rules[] = {
   { "'",        "CHAR",             &_sbnf_char },
   { "\"",       "STRING",           &_sbnf_string },
   { "`",        "NO_CASE_STRING",   &_sbnf_ncstring },
@@ -21,11 +21,83 @@ sbnf_t* sbnf_create()
 
   if ((bnf = malloc(sizeof(*bnf))) == NULL)
     return (NULL);
-  if (((bnf->rules[RL_INTERNAL] = h_create(256, &jenkins_hash, KY_STRING)) == NULL) ||
-    (bnf->rules[RL_STRING] = h_create(256, &jenkins_hash, KY_STRING)) == NULL ||
+  if (((bnf->rules[RL_INTERNAL] = h_create(1024, &jenkins_hash, KY_STRING)) == NULL) ||
+    (bnf->rules[RL_STRING] = h_create(1024, &jenkins_hash, KY_STRING)) == NULL ||
     (bnf->save = h_create(1024, &jenkins_hash, KY_STRING)) == NULL)
     return (NULL);
   return (_sbnf_rl_internal(bnf));
+}
+
+int sbnf_add_srule(sbnf_t* bnf, const char* rule, const char* str)
+{
+  return (h_add(bnf->rules[RL_STRING], (void*)rule, (void*)str) != NULL);
+}
+
+int sbnf_parse(sbnf_t* bnf, const char* str, unsigned size)
+{
+  if (!h_has(bnf->rules[RL_STRING], SBNF_ENTRY)) //TODO fprintf(no entry point)
+    return (0);
+  if ((bnf->input = csmr_create(str, size)) == NULL) //TODO csmr alloc error
+    return (0);
+  //sbnf_eval_rllist() || !_CSMR_IS_EOI(bnf->input) //Set csmr !
+  csmr_destroy(bnf->input);
+}
+
+int _sbnf_setrl(sbnf_t* bnf, consumer_t* csmr, sbnf_rl_t* rule)
+{
+  int identifier = 0;
+
+  rule->save = NULL;
+  if (!csmr_start(csmr, "rule") ||
+    !csmr_of(SBNF_SYMBOLS) ||
+    !(identifier = csmr_identifier(csmr)) ||
+    !csmr_ends(csmr, "rule", &rule->name))
+  {
+    //ERR
+  }
+  if (identifier && csmr_char(csmr, ':'))
+  {
+    if (!csmr_start(csmr, "save") ||
+      !csmr_identifier(csmr) ||
+      !csmr_ends(csmr, "save", &rule->save))
+    {
+      //ERR
+    }
+  }
+  return (1);
+}
+
+int _sbnf_eval_intrl(sbnf_t* bnf, consumer_t* csmr, sbnf_rl_t* rule)
+{
+  sbnf_intrl_t* int_rule = (sbnf_intrl_t*)h_get(bnf->rules[RL_INTERNAL], rule->name);
+
+  if (int_rule == NULL)
+    return (0);
+  return (int_rule->func(bnf, csmr, int_rule));
+}
+
+int _sbnf_eval_rl(sbnf_t* bnf, consumer_t* csmr, sbnf_rl_t* rule)
+{
+  int result;
+  bytes_t* b;
+  unsigned i = 0;
+  sbnf_rlfunc funcs[] = { &_sbnf_eval_intrl };
+
+  if (rule->save && !csmr_start(bnf->save, "save"))
+    return (0); //TODO ERROR
+  while (i < RL_COUNT && !h_has(bnf->rules[i++], rule->name));
+  if (i >= RL_COUNT)
+    return (0); //TODO ERROR
+  if ((result = funcs[i](bnf, csmr, rule)) && rule->save)
+  {
+    if (!csmr_ends(bnf->save, "save", &b))
+      return (0); //TODO ERROR
+    //TODO Save
+  }
+  if (rule->save)
+    free(rule->save);
+  free(rule->name);
+  return (result);
 }
 
 sbnf_t* _sbnf_rl_internal(sbnf_t* bnf)
@@ -41,7 +113,7 @@ sbnf_t* _sbnf_rl_internal(sbnf_t* bnf)
   return (bnf);
 }
 
-int _sbnf_char(sbnf_t* bnf, consumer_t* csmr, struct s_sbnf_rlint* rlint)
+int _sbnf_char(sbnf_t* bnf, consumer_t* csmr, sbnf_intrl_t* rlint)
 {
   char c;
 
@@ -50,7 +122,7 @@ int _sbnf_char(sbnf_t* bnf, consumer_t* csmr, struct s_sbnf_rlint* rlint)
   return (csmr_char(bnf->input, c));
 }
 
-int _sbnf_string(sbnf_t* bnf, consumer_t* csmr, struct s_sbnf_rlint* rlint)
+int _sbnf_string(sbnf_t* bnf, consumer_t* csmr, sbnf_intrl_t* rlint)
 {
   char* str;
   int has_read = 0;
@@ -62,7 +134,7 @@ int _sbnf_string(sbnf_t* bnf, consumer_t* csmr, struct s_sbnf_rlint* rlint)
   return (has_read);
 }
 
-int _sbnf_ncstring(sbnf_t* bnf, consumer_t* csmr, struct s_sbnf_rlint* rlint)
+int _sbnf_ncstring(sbnf_t* bnf, consumer_t* csmr, sbnf_intrl_t* rlint)
 {
   char* str;
   int has_read = 0;
@@ -74,7 +146,7 @@ int _sbnf_ncstring(sbnf_t* bnf, consumer_t* csmr, struct s_sbnf_rlint* rlint)
   return (has_read);
 }
 
-int _sbnf_optional(sbnf_t* bnf, consumer_t* csmr, struct s_sbnf_rlint* rlint)
+int _sbnf_optional(sbnf_t* bnf, consumer_t* csmr, sbnf_intrl_t* rlint)
 {
   char* str;
 
@@ -85,7 +157,7 @@ int _sbnf_optional(sbnf_t* bnf, consumer_t* csmr, struct s_sbnf_rlint* rlint)
   return (1);
 }
 
-int _sbnf_whitespaces(sbnf_t* bnf, consumer_t* csmr, struct s_sbnf_rlint* rlint)
+int _sbnf_whitespaces(sbnf_t* bnf, consumer_t* csmr, sbnf_intrl_t* rlint)
 {
   (void)rlint;
   (void)csmr;
@@ -93,14 +165,14 @@ int _sbnf_whitespaces(sbnf_t* bnf, consumer_t* csmr, struct s_sbnf_rlint* rlint)
   return (1);
 }
 
-int _sbnf_digit(sbnf_t* bnf, consumer_t* csmr, struct s_sbnf_rlint* rlint)
+int _sbnf_digit(sbnf_t* bnf, consumer_t* csmr, sbnf_intrl_t* rlint)
 {
   (void)csmr;
   (void)rlint;
   return (csmr_digit(bnf->input));
 }
 
-int _sbnf_num(sbnf_t* bnf, consumer_t* csmr, struct s_sbnf_rlint* rlint)
+int _sbnf_num(sbnf_t* bnf, consumer_t* csmr, sbnf_intrl_t* rlint)
 {
   (void)csmr;
   (void)rlint;
@@ -110,14 +182,14 @@ int _sbnf_num(sbnf_t* bnf, consumer_t* csmr, struct s_sbnf_rlint* rlint)
   return (1);
 }
 
-int _sbnf_alpha(sbnf_t* bnf, consumer_t* csmr, struct s_sbnf_rlint* rlint)
+int _sbnf_alpha(sbnf_t* bnf, consumer_t* csmr, sbnf_intrl_t* rlint)
 {
   (void)csmr;
   (void)rlint;
   return (csmr_alpha(bnf->input));
 }
 
-int _sbnf_word(sbnf_t* bnf, consumer_t* csmr, struct s_sbnf_rlint* rlint)
+int _sbnf_word(sbnf_t* bnf, consumer_t* csmr, sbnf_intrl_t* rlint)
 {
   (void)csmr;
   (void)rlint;
@@ -127,34 +199,25 @@ int _sbnf_word(sbnf_t* bnf, consumer_t* csmr, struct s_sbnf_rlint* rlint)
   return (1);
 }
 
-int _sbnf_alnum(sbnf_t* bnf, consumer_t* csmr, struct s_sbnf_rlint* rlint)
+int _sbnf_alnum(sbnf_t* bnf, consumer_t* csmr, sbnf_intrl_t* rlint)
 {
   (void)csmr;
   (void)rlint;
   return (csmr_alphanum(bnf->input));
 }
 
-int _sbnf_eol(sbnf_t* bnf, consumer_t* csmr, struct s_sbnf_rlint* rlint)
+int _sbnf_eol(sbnf_t* bnf, consumer_t* csmr, sbnf_intrl_t* rlint)
 {
   (void)csmr;
   (void)rlint;
   return (csmr_some(bnf->input, "\r\n"));
 }
 
-int _sbnf_internal_err(sbnf_t* bnf, consumer_t* csmr, struct s_sbnf_rlint* rlint)
-{
-  (void)csmr; //TODO Use context consumer !
-  fprintf(stderr, "%s: %s\n", SBNF_ERR, rlint->name);
-  bnf->_err = 1;
-  return (0);
-}
-
 //Use after a rule => Return content between 2 rule tokens
-//Ex:
-//After rule 'STRING' -> hello world"
-//Redo consumer pointer using size of rule -> "hello world"
-//Set 'str' as the content between tokens -> hello world
-int _sbnf_tkn_cntnt(sbnf_t* bnf, consumer_t* csmr, struct s_sbnf_rlint* rlint, const char* tokens, char** str)
+//Ex: After rule 'STRING' -> hello world"
+//    Redo consumer pointer using size of rule -> "hello world"
+//    Set 'str' as the content between tokens -> hello world
+int _sbnf_tkn_cntnt(sbnf_t* bnf, consumer_t* csmr, sbnf_intrl_t* rlint, const char* tokens, char** str)
 {
   bytes_t* cntnt;
   unsigned len = strlen(rlint->rule);
@@ -162,7 +225,7 @@ int _sbnf_tkn_cntnt(sbnf_t* bnf, consumer_t* csmr, struct s_sbnf_rlint* rlint, c
   csmr->_ptr -= len;
   if (!csmr_start(csmr, "token") ||
     !csmr_tkn(csmr, tokens[0], tokens[1]) ||
-    !csmr_end(csmr, "token", &cntnt))
+    !csmr_endb(csmr, "token", &cntnt))
     return (_sbnf_internal_err(bnf, csmr, rlint));
   b_erase(cntnt, 0, 1);
   b_erase(cntnt, cntnt->size - 1, 1);
@@ -171,4 +234,13 @@ int _sbnf_tkn_cntnt(sbnf_t* bnf, consumer_t* csmr, struct s_sbnf_rlint* rlint, c
   *str = cntnt->array;
   free(cntnt);
   return (1);
+}
+
+//Call whenever there is an error linked to the BNF.
+int _sbnf_internal_err(sbnf_t* bnf, consumer_t* csmr, sbnf_intrl_t* rlint)
+{
+  (void)csmr; //TODO Use context consumer !
+  fprintf(stderr, "%s: %s\n", SBNF_ERR, rlint->name);
+  bnf->_err = 1;
+  return (0);
 }

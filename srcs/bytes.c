@@ -1,64 +1,61 @@
 #include "bytes.h"
 
-bytes_t* b_create(const char* b, unsigned size)
+sc_bytes_t* sc_bcreate(const char* b, unsigned size)
 {
-  bytes_t* bytes;
+  sc_bytes_t* bytes;
 
   if ((bytes = malloc(sizeof(*bytes))) == NULL)
-    return (NULL);
+    sc_ferr(1, "malloc() -> sc_bcreate()");
   bytes->array = NULL;
   bytes->size = 0;
   bytes->_alloc = 0;
-  return (b_cpy(bytes, b, size));
+  return (sc_bcpy(bytes, b, size));
 }
 
-bytes_t* b_cpy(bytes_t* bytes, const char* b, unsigned size)
+sc_bytes_t* sc_bcpy(sc_bytes_t* bytes, const char* b, unsigned size)
 {
-  if (!_b_alloc(bytes, size))
-    return (NULL);
+  _sc_balloc(bytes, size);
   memcpy(bytes->array, b, size);
   bytes->size = size;
   return (bytes);
 }
 
-bytes_t* b_app(bytes_t* bytes, const char* b, unsigned size)
+sc_bytes_t* sc_bapp(sc_bytes_t* bytes, const char* b, unsigned size)
 {
-  if (!_b_alloc(bytes, size))
-    return (NULL);
+  _sc_balloc(bytes, size);
   memcpy(bytes->array + bytes->size, b, size);
   bytes->size += size;
   return (bytes);
 }
 
-bytes_t* b_appb(bytes_t* bytes, const bytes_t* app)
+sc_bytes_t* sc_bappb(sc_bytes_t* bytes, const sc_bytes_t* app)
 {
-  return (b_app(bytes, app->array, app->size));
+  return (sc_bapp(bytes, app->array, app->size));
 }
 
-bytes_t* b_appc(bytes_t* bytes, char c)
+sc_bytes_t* sc_bappc(sc_bytes_t* bytes, char c)
 {
-  if (!_b_alloc(bytes, 1))
-    return (NULL);
+  _sc_balloc(bytes, 1);
   bytes->array[bytes->size] = c;
   bytes->size += 1;
   return (bytes);
 }
 
-bytes_t* b_erase(bytes_t* bytes, unsigned pos, unsigned count)
+sc_bytes_t* sc_berase(sc_bytes_t* bytes, unsigned pos, unsigned count)
 {
-  if (!_b_valid(bytes, &pos, &count))
+  if (!_sc_bvalid(bytes, &pos, &count))
     return (bytes);
   memmove(bytes->array + pos, bytes->array + pos + count, bytes->size - (pos + count));
   bytes->size -= count;
   return (bytes);
 }
 
-char* b_to_str(bytes_t* bytes)
+char* sc_bts(sc_bytes_t* bytes)
 {
   char *str;
 
   if ((str = malloc(bytes->size + 1)) == NULL)
-    return (NULL);
+    sc_ferr(1, "malloc() -> sc_bts()");
   memcpy(str, bytes->array, bytes->size);
   str[bytes->size] = 0;
   return (str);
@@ -66,7 +63,7 @@ char* b_to_str(bytes_t* bytes)
 
 //TODO Redo that, cleaner:
 //0: standard print, 1: byte list
-void b_print(bytes_t* bytes, FILE* f, char mode)
+void sc_bprint(sc_bytes_t* bytes, FILE* f, char mode)
 {
   unsigned i = 0;
 
@@ -88,40 +85,39 @@ void b_print(bytes_t* bytes, FILE* f, char mode)
   }
 }
 
-void b_destroy(bytes_t* bytes)
+void sc_bdestroy(sc_bytes_t* bytes)
 {
   if (bytes->array)
     free(bytes->array);
   free(bytes);
 }
 
-int _b_realloc(bytes_t* bytes, unsigned size)
+int _sc_brealloc(sc_bytes_t* bytes, unsigned size)
 {
   char *tmp;
-  unsigned n = _BYTES_SIZE;
+  unsigned n = SIC_BSIZE;
 
   if (size >= bytes->_alloc)
   {
     while (n <= size)
       n = n << 1;
     if ((tmp = malloc(n)) == NULL)
-      return (0);
+      sc_ferr(1, "malloc() -> _sc_brealloc()");
     memcpy(tmp, bytes->array, bytes->size);
-    free(bytes->array);
+    if (bytes->array)
+      free(bytes->array);
     bytes->array = tmp;
     bytes->_alloc = n;
   }
   return (1);
 }
 
-int _b_alloc(bytes_t* bytes, unsigned size)
+int _sc_balloc(sc_bytes_t* bytes, unsigned size)
 {
-  if (bytes == NULL)
-    return (0);
-  return (size ? _b_realloc(bytes, bytes->size + size) : 1);
+  return (size ? _sc_brealloc(bytes, bytes->size + size) : 1);
 }
 
-int _b_valid(bytes_t* bytes, unsigned* pos, unsigned* count)
+int _sc_bvalid(sc_bytes_t* bytes, unsigned* pos, unsigned* count)
 {
   if (*pos + *count < bytes->size) //If inside of bytes
     return (1);

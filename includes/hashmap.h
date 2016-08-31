@@ -1,47 +1,46 @@
-#ifndef HASHMAP_H_
-#define HASHMAP_H_
+#ifndef SIC_HASHMAP_H_
+#define SIC_HASHMAP_H_
 
 #include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
+#include "utils.h"
 
-#define KY_STRING          0
-#define KY_PTR             1
+#define SIC_KY_STRING          0
+#define SIC_KY_PTR             1
 
-#define _H_IDX(map, key)  (map->hash(key, _h_key_size(key, map->key_type)) % map->size)
+#define SIC_HIDX(map, key)  (map->hash(key, _sc_hkey_size(key, map->key_type)) % map->size)
 
-typedef uint32_t (*hash_func)(const char*, unsigned);
+typedef uint32_t (*sc_hashfunc)(const char*, unsigned);
 
-struct s_bucket
+struct sc_s_bcket
 {
   void* val;
   const void* key;
-  struct s_bucket *next;
+  struct sc_s_bcket *next;
 };
 
-typedef struct s_hashmap
+typedef struct s_sc_hashmap
 {
   uint32_t size;
-  hash_func hash;
+  sc_hashfunc hash;
   uint8_t key_type;
-  struct s_bucket **buckets;
-} hashmap_t;
+  struct sc_s_bcket **buckets;
+} sc_hashmp_t;
 
-hashmap_t* h_create(uint32_t, hash_func, uint8_t);
-hashmap_t* h_add(hashmap_t*, const void*, void*);
-int h_has(hashmap_t*, const void*);
-void* h_get(hashmap_t*, const void*);
+sc_hashmp_t* sc_hcreate(uint32_t, sc_hashfunc, uint8_t);
+sc_hashmp_t* sc_hadd(sc_hashmp_t*, const void*, void*);
+int sc_hhas(sc_hashmp_t*, const void*);
+void* sc_hget(sc_hashmp_t*, const void*);
 
-void h_destroy(hashmap_t*);
+void sc_hdestroy(sc_hashmp_t*);
 
-uint32_t jenkins_hash(const char*, unsigned);
+uint32_t sc_jenkins_hash(const char*, unsigned);
 
 ///Internal logic
 
-int _h_find(struct s_bucket**, struct s_bucket*, const void*, uint8_t);
-struct s_bucket* _h_add(hashmap_t*, uint32_t, struct s_bucket*, const void*, void*);
+int _sc_hfind(struct sc_s_bcket**, struct sc_s_bcket*, const void*, uint8_t);
+struct sc_s_bcket* _sc_hadd(sc_hashmp_t*, uint32_t, struct sc_s_bcket*, const void*, void*);
 
-unsigned _h_key_size(const void*, uint8_t);
-int _h_key_cmp(const void*, const void*, uint8_t);
+unsigned _sc_hkey_size(const void*, uint8_t);
+int _sc_hkey_cmp(const void*, const void*, uint8_t);
 
 #endif

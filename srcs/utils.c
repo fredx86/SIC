@@ -1,6 +1,12 @@
-#include "str_utils.h"
+#include "utils.h"
 
-int str_cmp(const char* a, unsigned sa, const char* b, unsigned sb, unsigned cmp)
+void sc_ferr(int r, const char* e)
+{
+  perror(e);
+  exit(r);
+}
+
+int sc_strcmp(const char* a, unsigned sa, const char* b, unsigned sb, unsigned cmp)
 {
   unsigned i = 0;
 
@@ -13,7 +19,7 @@ int str_cmp(const char* a, unsigned sa, const char* b, unsigned sb, unsigned cmp
   return (1);
 }
 
-int str_cmp_nocase(const char* a, unsigned sa, const char* b, unsigned sb, unsigned cmp)
+int sc_ncstrcmp(const char* a, unsigned sa, const char* b, unsigned sb, unsigned cmp)
 {
   unsigned i = 0;
 

@@ -20,11 +20,10 @@ alnum
 eol                   end of line: '\r\n', '\r' or \'n'
 
 
-S aving
-B
-N
-F
-
 
 thing = digit | OEL | '%'
 _main_ = thing:header
+
+S aving
+I mplemention of a
+C ontext-Free-Grammar

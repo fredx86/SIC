@@ -1,9 +1,8 @@
-SRCS			=	srcs/main.c 				\
-						srcs/bytes.c 				\
-						srcs/consumer.c 		\
-						srcs/hashmap.c      \
-						srcs/sbnf.c         \
-						srcs/str_utils.c 		\
+SRCS			=	srcs/main.c 						\
+						srcs/bytes.c 						\
+						srcs/consumer.c					\
+						srcs/hashmap.c					\
+						srcs/utils.c 						\
 
 OBJS			= $(SRCS:.c=.o)
 
