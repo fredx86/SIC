@@ -9,7 +9,7 @@ sc_consumer_t* sc_ccreate(const char* str, unsigned size)
   consumer->bytes = sc_bcreate(str, size);
   printf("%u\n", size);
   fflush(stdout);
-  consumer->map = sc_hcreate(1024, &sc_jenkins_hash, SIC_KY_STRING);
+  consumer->map = sc_hcreate(1024, &sc_jenkins_hash, SC_KY_STRING);
   consumer->_ptr = 0;
   return (consumer);
 }
@@ -140,18 +140,18 @@ int sc_ctkn(sc_consumer_t* consumer, char start_token, char end_token)
   return (0);
 }
 
-int sc_cstart(sc_consumer_t* consumer, const char* id)
+void sc_cstart(sc_consumer_t* consumer, const char* id)
 {
-  return (sc_hadd(consumer->map, (void*)id, (void*)consumer->_ptr) != NULL);
+  sc_hadd(consumer->map, (void*)id, (void*)consumer->_ptr);
 }
 
-int sc_cendb(sc_consumer_t* consumer, const char* id, sc_bytes_t** content)
+void sc_cendb(sc_consumer_t* consumer, const char* id, sc_bytes_t** content)
 {
   intptr_t n = (intptr_t)sc_hget(consumer->map, (void*)id);
-  return ((*content = sc_bcreate(consumer->bytes->array + n, consumer->_ptr - n)) != NULL);
+  *content = sc_bcreate(consumer->bytes->array + n, consumer->_ptr - n);
 }
 
-int sc_cends(sc_consumer_t* consumer, const char* id, char** content)
+void sc_cends(sc_consumer_t* consumer, const char* id, char** content)
 {
   intptr_t n = (intptr_t)sc_hget(consumer->map, (void*)id);
 
@@ -159,7 +159,12 @@ int sc_cends(sc_consumer_t* consumer, const char* id, char** content)
     sc_ferr(1, "malloc() -> sc_cends()");
   memcpy(*content, consumer->bytes->array + n, consumer->_ptr - n);
   (*content)[consumer->_ptr - n] = 0;
-  return (1);
+}
+
+void sc_cdestroy(sc_consumer_t* consumer)
+{
+  sc_hdestroy(consumer->map);
+  sc_bdestroy(consumer->bytes);
 }
 
 int _sc_cincr(sc_consumer_t* consumer, unsigned n)
