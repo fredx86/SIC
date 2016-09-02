@@ -5,7 +5,7 @@
 
 #define SIC_ERR        "SIC Fatal Error"
 #define SIC_ENTRY      "_main_"
-#define SIC_SYMBOLS    "\'\"`[$*+"
+#define SIC_SYMBOLS    "\'\"`[$*+~"
 
 typedef enum sc_e_rules
 {
@@ -47,11 +47,19 @@ void sc_add_srule(sic_t*, const char*, const char*);
 
 int sc_parse(sic_t*, const char*, unsigned);
 
+//destroy()
+// -> free save = *VALUES + KEYS*
+
 ///Internal logic
 
 int _sc_setrl(sic_t*, sc_consumer_t*, sc_rl_t*);
 
-sic_t* _sc_rl_internal(sic_t*);
+int _sc_eval_rl(sic_t*, sc_consumer_t*, sc_rl_t*);
+int _sc_eval_intrl(sic_t*, sc_consumer_t*, sc_rl_t*);
+int _sc_eval_strrl(sic_t*, sc_consumer_t*, sc_rl_t*);
+int _sc_eval_simplist_rl(sic_t*, sc_consumer_t*);
+
+sic_t* _sc_set_intrl(sic_t*);
 
 int _sc_char(sic_t*, sc_consumer_t*, sc_rlint_t*);
 int _sc_string(sic_t*, sc_consumer_t*, sc_rlint_t*);

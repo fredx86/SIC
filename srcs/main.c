@@ -1,10 +1,12 @@
 #include <stdio.h>
-#include "consumer.h"
+#include "sic.h"
 
 int main()
 {
-  sc_consumer_t *c = sc_ccreate(NULL, 0);
+  sic_t *s = sc_create();
 
-  printf("%d\n", sc_cchar(c, 'a'));
+  sc_add_srule(s, SIC_ENTRY, "word:test ' ' num:test2");
+  sc_parse(s, "salut 123 !", 11);
+
   return (0);
 }

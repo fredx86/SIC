@@ -24,7 +24,7 @@ sic_t* sc_create()
   sic->rules[SC_RL_INTERNAL] = sc_hcreate(1024, &sc_jenkins_hash, SC_KY_STRING);
   sic->rules[SC_RL_STRING] = sc_hcreate(1024, &sc_jenkins_hash, SC_KY_STRING);
   sic->save = sc_hcreate(1024, &sc_jenkins_hash, SC_KY_STRING);
-  return (_sc_rl_internal(sic));
+  return (_sc_set_intrl(sic));
 }
 
 int sc_load_file(sic_t* sic, const char* filepath)
@@ -41,14 +41,25 @@ void sc_add_srule(sic_t* sic, const char* rule, const char* str)
 
 int sc_parse(sic_t* sic, const char* str, unsigned size)
 {
-  if (!sc_hhas(sic->rules[SC_RL_STRING], SIC_ENTRY)) //TODO fprintf(no entry point)
+  char* entry;
+  sc_consumer_t* csmr;
+
+  if ((entry = sc_hget(sic->rules[SC_RL_STRING], SIC_ENTRY)) == NULL)
+  {
+    fprintf(stderr, "%s: No entry point @%s\n", SIC_ERR, SIC_ENTRY);
     return (0);
+  }
+  csmr = sc_ccreate(entry, strlen(entry));
   sic->input = sc_ccreate(str, size);
+
+  //DBG
+  _sc_eval_simplist_rl(sic, csmr);
+  printf("Consumed: %d\n", sic->input->_ptr);
+
   sc_cdestroy(sic->input);
   return (1); //TODO
 }
 
-//TODO NOT FINISHED !!!
 int _sc_setrl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
 {
   int identifier = 0;
@@ -56,21 +67,44 @@ int _sc_setrl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
   (void)sic;
   rule->save = NULL;
   sc_cstart(csmr, "rule");
-  if (!sc_cof(csmr, SIC_SYMBOLS) || !(identifier = sc_cidentifier(csmr)))
-  {
-    //ERR
-  }
+  if (!sc_cof(csmr, SIC_SYMBOLS) && !(identifier = sc_cidentifier(csmr)))
+    return (_sc_internal_err(sic, csmr, NULL));
   sc_cends(csmr, "rule", &rule->name);
   if (identifier && sc_cchar(csmr, ':'))
   {
     sc_cstart(csmr, "save");
     if (!sc_cidentifier(csmr))
-    {
-      //ERR
-    }
+      return (_sc_internal_err(sic, csmr, NULL));
     sc_cends(csmr, "save", &rule->save);
   }
   return (1);
+}
+
+int _sc_eval_rl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
+{
+  int result;
+  sc_bytes_t* saved;
+  unsigned i = 0;
+  sc_rlfunc funcs[] = { &_sc_eval_intrl, &_sc_eval_strrl };
+
+  if (rule->save)
+    sc_cstart(sic->input, "save");
+  while (i < SC_RL_COUNT)
+  {
+    if (sc_hhas(sic->rules[i], rule->name))
+    {
+      result = funcs[i](sic, csmr, rule);
+      break;
+    }
+    ++i;
+  }
+  if (rule->save)
+  {
+    sc_cendb(sic->input, "save", &saved);
+    sc_hadd(sic->save, (void*)rule->save, saved);
+  }
+  free(rule->name);
+  return (result);
 }
 
 int _sc_eval_intrl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
@@ -82,37 +116,44 @@ int _sc_eval_intrl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
   return (int_rule->func(sic, csmr, int_rule));
 }
 
-int _sc_eval_rl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
+//TODO
+int _sc_eval_strrl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
 {
-  int result;
-  sc_bytes_t* b;
-  unsigned i = 0;
-  sc_rlfunc funcs[] = { &_sc_eval_intrl };
-
-  if (rule->save)
-    sc_cstart(sic->input, "save");
-  while (i < SC_RL_COUNT && !sc_hhas(sic->rules[i++], rule->name));
-  if (i >= SC_RL_COUNT)
-    return (0); //TODO ERROR
-  if ((result = funcs[i](sic, csmr, rule)) && rule->save)
-  {
-    sc_cendb(sic->input, "save", &b);
-    //TODO Save
-  }
-  if (rule->save)
-    free(rule->save);
-  free(rule->name);
-  return (result);
+  (void)sic;
+  (void)csmr;
+  (void)rule;
+  return (0);
 }
 
-sic_t* _sc_rl_internal(sic_t* sic)
+//Eval list of rules WITHOUT 'OR' operator
+int _sc_eval_simplist_rl(sic_t* sic, sc_consumer_t* csmr)
+{
+  sc_rl_t rule;
+  intptr_t save = sic->input->_ptr;
+
+  while (!SIC_CSMR_IS_EOI(csmr))
+  {
+    sc_cmultiples(csmr, &sc_cwhitespace);
+    if (!_sc_setrl(sic, csmr, &rule))
+      return (0);
+    if (!_sc_eval_rl(sic, csmr, &rule))
+    {
+      sic->input->_ptr = save;
+      return (0);
+    }
+    sc_cmultiples(csmr, &sc_cwhitespace);
+  }
+  return (1);
+}
+
+//Add to the SIC the internal rules
+sic_t* _sc_set_intrl(sic_t* sic)
 {
   unsigned i = 0;
 
   while (_int_rules[i].rule)
   {
-    if (!sc_hadd(sic->rules[SC_RL_INTERNAL], (void*)_int_rules[i].rule, &_int_rules[i]))
-      return (NULL);
+    sc_hadd(sic->rules[SC_RL_INTERNAL], (void*)_int_rules[i].rule, &_int_rules[i]);
     ++i;
   }
   return (sic);
@@ -181,10 +222,7 @@ int _sc_num(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 {
   (void)csmr;
   (void)rlint;
-  if (sc_cdigit(sic->input) == 0)
-    return (0);
-  while (sc_cdigit(sic->input));
-  return (1);
+  return (sc_cmultiples(sic->input, &sc_cdigit));
 }
 
 int _sc_alpha(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
@@ -198,10 +236,7 @@ int _sc_word(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 {
   (void)csmr;
   (void)rlint;
-  if (sc_calpha(sic->input) == 0)
-    return (0);
-  while (sc_calpha(sic->input));
-  return (1);
+  return (sc_cmultiples(sic->input, &sc_calpha));
 }
 
 int _sc_alnum(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)

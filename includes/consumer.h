@@ -13,6 +13,8 @@ typedef struct sc_s_consumer
   intptr_t _ptr;
 } sc_consumer_t;
 
+typedef int (*sc_csmrfunc)(sc_consumer_t*);
+
 #define SIC_CSMR_CHAR(consumer)      (consumer->bytes->array[consumer->_ptr])
 #define SIC_CSMR_STR(consumer)       (consumer->bytes->array + consumer->_ptr)
 #define SIC_CSMR_IS_EOI(consumer)    (consumer->_ptr >= consumer->bytes->size)
@@ -34,6 +36,7 @@ int sc_calphanum(sc_consumer_t*);
 int sc_cidentifier(sc_consumer_t*);
 int sc_cwhitespace(sc_consumer_t*);
 int sc_cprint(sc_consumer_t*);
+int sc_cmultiples(sc_consumer_t*, sc_csmrfunc);
 
 int sc_ctkn(sc_consumer_t*, char, char);
 

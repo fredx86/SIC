@@ -7,8 +7,6 @@ sc_consumer_t* sc_ccreate(const char* str, unsigned size)
   if ((consumer = malloc(sizeof(*consumer))) == NULL)
     sc_ferr(1, "malloc() -> sc_ccreate()");
   consumer->bytes = sc_bcreate(str, size);
-  printf("%u\n", size);
-  fflush(stdout);
   consumer->map = sc_hcreate(1024, &sc_jenkins_hash, SC_KY_STRING);
   consumer->_ptr = 0;
   return (consumer);
@@ -117,6 +115,14 @@ int sc_cwhitespace(sc_consumer_t* consumer)
 int sc_cprint(sc_consumer_t* consumer)
 {
   return (sc_cfunc(consumer, &isprint));
+}
+
+int sc_cmultiples(sc_consumer_t* consumer, sc_csmrfunc func)
+{
+  if (!func(consumer))
+    return (0);
+  while (func(consumer));
+  return (1);
 }
 
 //Consume everything between 2 tokens
