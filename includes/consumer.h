@@ -44,6 +44,8 @@ void sc_cstart(sc_consumer_t*, const char*);
 void sc_cendb(sc_consumer_t*, const char*, sc_bytes_t**);
 void sc_cends(sc_consumer_t*, const char*, char**);
 
+char* sc_cts(sc_consumer_t*);
+
 void sc_cdestroy(sc_consumer_t*);
 
 int _sc_cincr(sc_consumer_t*, unsigned);

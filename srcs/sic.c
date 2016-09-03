@@ -12,6 +12,8 @@ static sc_rlint_t _int_rules[] = {
   { "word",     "WORD",             &_sc_word },
   { "alnum",    "ALPHA_NUMERIC",    &_sc_alnum },
   { "eol",      "END_OF_LINE",      &_sc_eol },
+  { "*",        "OPT_MULTIPLE",     &_sc_opt_multiple },
+  { "+",        "ONE_MULTIPLE",     &_sc_one_multiple },
   { NULL, NULL, NULL }
 };
 
@@ -41,6 +43,7 @@ void sc_add_srule(sic_t* sic, const char* rule, const char* str)
 
 int sc_parse(sic_t* sic, const char* str, unsigned size)
 {
+  char result;
   char* entry;
   sc_consumer_t* csmr;
 
@@ -49,15 +52,13 @@ int sc_parse(sic_t* sic, const char* str, unsigned size)
     fprintf(stderr, "%s: No entry point @%s\n", SIC_ERR, SIC_ENTRY);
     return (0);
   }
+  //TODO clear content of save !!!
   csmr = sc_ccreate(entry, strlen(entry));
   sic->input = sc_ccreate(str, size);
-
-  //DBG
-  _sc_eval_simplist_rl(sic, csmr);
-  printf("Consumed: %d\n", sic->input->_ptr);
-
+  result = _sc_eval_rllist(sic, csmr) && SIC_CSMR_IS_EOI(sic->input);
+  result = (sic->_err ? 0 : result);
   sc_cdestroy(sic->input);
-  return (1); //TODO
+  return (result);
 }
 
 int _sc_setrl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
@@ -83,27 +84,42 @@ int _sc_setrl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
 int _sc_eval_rl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
 {
   int result;
+  unsigned i;
   sc_bytes_t* saved;
-  unsigned i = 0;
   sc_rlfunc funcs[] = { &_sc_eval_intrl, &_sc_eval_strrl };
 
   if (rule->save)
     sc_cstart(sic->input, "save");
-  while (i < SC_RL_COUNT)
+
+  //DBG
+  for (i = 0; i < SC_RL_COUNT; ++i)
   {
+    printf("Eval: %s %d %d\n", rule->name, i, SC_RL_COUNT);
+    fflush(stdout);
+
     if (sc_hhas(sic->rules[i], rule->name))
     {
       result = funcs[i](sic, csmr, rule);
       break;
     }
-    ++i;
   }
+
+  /*if (i == SC_RL_COUNT)
+  {
+    free(rule->name);
+    return (_sc_internal_err(sic, csmr, NULL));
+  }*/
   if (rule->save)
   {
     sc_cendb(sic->input, "save", &saved);
     sc_hadd(sic->save, (void*)rule->save, saved);
   }
-  free(rule->name);
+
+  //DBG
+  printf("Result: %s %d\n", rule->name, result);
+  fflush(stdout);
+
+  //free(rule->name); WUT ?!!!
   return (result);
 }
 
@@ -116,20 +132,29 @@ int _sc_eval_intrl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
   return (int_rule->func(sic, csmr, int_rule));
 }
 
-//TODO
 int _sc_eval_strrl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
 {
-  (void)sic;
+  char* str;
+  int result;
+  sc_consumer_t* ncsmr;
+
   (void)csmr;
-  (void)rule;
-  return (0);
+  if ((str = (char*)sc_hget(sic->rules[SC_RL_STRING], rule->name)) == NULL)
+    return (0);
+  ncsmr = sc_ccreate(str, strlen(str));
+  result = _sc_eval_rllist(sic, ncsmr);
+  sc_cdestroy(ncsmr);
+  return (result);
 }
 
 //Eval list of rules WITHOUT 'OR' operator
-int _sc_eval_simplist_rl(sic_t* sic, sc_consumer_t* csmr)
+int _sc_eval_rlsimplist(sic_t* sic, sc_consumer_t* csmr)
 {
   sc_rl_t rule;
   intptr_t save = sic->input->_ptr;
+
+  printf("< _sc_eval_rlsimplist\n");
+  fflush(stdout);
 
   while (!SIC_CSMR_IS_EOI(csmr))
   {
@@ -143,19 +168,43 @@ int _sc_eval_simplist_rl(sic_t* sic, sc_consumer_t* csmr)
     }
     sc_cmultiples(csmr, &sc_cwhitespace);
   }
+
+  printf("> _sc_eval_rlsimplist\n");
+  fflush(stdout);
+
   return (1);
+}
+
+//Eval list of rules WITH 'OR' operator
+int _sc_eval_rllist(sic_t* sic, sc_consumer_t* csmr)
+{
+  char* tmp;
+  unsigned i;
+  char** splitted;
+  char result = 0;
+  sc_consumer_t* ncsmr;
+
+  tmp = sc_cts(csmr);
+  if ((splitted = sc_split_tkn(tmp, "\"\'", '|')) == NULL)
+    sc_ferr(1, "_sc_eval_rllist() -> sc_split_tkn() -> malloc()");
+  free(tmp);
+  for (i = 0; splitted[i] && !result && !sic->_err; ++i)
+  {
+    ncsmr = sc_ccreate(splitted[i], strlen(splitted[i]));
+    result = _sc_eval_rlsimplist(sic, ncsmr);
+    sc_cdestroy(ncsmr);
+  }
+  free(splitted);
+  return (result);
 }
 
 //Add to the SIC the internal rules
 sic_t* _sc_set_intrl(sic_t* sic)
 {
-  unsigned i = 0;
+  unsigned i;
 
-  while (_int_rules[i].rule)
-  {
+  for (i = 0; _int_rules[i].rule; ++i)
     sc_hadd(sic->rules[SC_RL_INTERNAL], (void*)_int_rules[i].rule, &_int_rules[i]);
-    ++i;
-  }
   return (sic);
 }
 
@@ -195,10 +244,13 @@ int _sc_ncstring(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 int _sc_optional(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 {
   char* str;
+  sc_consumer_t* ncsmr;
 
   if (!_sc_tkn_cntnt(sic, csmr, rlint, "[]", &str))
     return (0);
-  //Execute rule :)
+  ncsmr = sc_ccreate(str, strlen(str));
+  _sc_eval_rllist(sic, ncsmr);
+  sc_cdestroy(ncsmr);
   free(str);
   return (1);
 }
@@ -253,6 +305,44 @@ int _sc_eol(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
   return (sc_csome(sic->input, "\r\n"));
 }
 
+int _sc_opt_multiple(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
+{
+  return (_sc_rl_multiple(sic, csmr, rlint, 0));
+}
+
+int _sc_one_multiple(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
+{
+  return (_sc_rl_multiple(sic, csmr, rlint, 1));
+}
+
+//Call whenever there is an error linked to the sic.
+int _sc_internal_err(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
+{
+  (void)csmr; //TODO Use context consumer !
+  fprintf(stderr, "%s: %s\n", SIC_ERR, rlint->name);
+  sic->_err = 1;
+  return (0);
+}
+
+//Evaluate the next given rule. Loop on the input until the rule stops to fit.
+//MUST fit at least 'n' times
+int _sc_rl_multiple(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint, unsigned n)
+{
+  unsigned i;
+  sc_rl_t rule;
+
+  (void)rlint;
+  if (!_sc_setrl(sic, csmr, &rule))
+    return (0);
+  for (i = 0; i < n; ++i)
+  {
+    if (!_sc_eval_rl(sic, csmr, &rule))
+      return (0);
+  }
+  while (_sc_eval_rl(sic, csmr, &rule));
+  return (1);
+}
+
 //Use after a rule => Return content between 2 rule tokens
 //Ex: After rule 'STRING' -> hello world"
 //    Redo consumer pointer using size of rule -> "hello world"
@@ -274,13 +364,4 @@ int _sc_tkn_cntnt(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint, const char
   *str = cntnt->array;
   free(cntnt);
   return (1);
-}
-
-//Call whenever there is an error linked to the sic.
-int _sc_internal_err(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
-{
-  (void)csmr; //TODO Use context consumer !
-  fprintf(stderr, "%s: %s\n", SIC_ERR, rlint->name);
-  sic->_err = 1;
-  return (0);
 }

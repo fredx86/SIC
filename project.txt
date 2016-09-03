@@ -27,3 +27,8 @@ _main_ = thing:header
 S aving
 I mplemention of a
 C ontext-Free-Grammar
+
+
+//TODO '('
+//  Ex: 'l' 'a' 'b' | 'c' 'd'  ->  "lcd" => FALSE
+//  Ex: 'l' ('a' 'b' | 'c' 'd') -> "lcd" => TRUE

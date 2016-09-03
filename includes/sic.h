@@ -57,7 +57,8 @@ int _sc_setrl(sic_t*, sc_consumer_t*, sc_rl_t*);
 int _sc_eval_rl(sic_t*, sc_consumer_t*, sc_rl_t*);
 int _sc_eval_intrl(sic_t*, sc_consumer_t*, sc_rl_t*);
 int _sc_eval_strrl(sic_t*, sc_consumer_t*, sc_rl_t*);
-int _sc_eval_simplist_rl(sic_t*, sc_consumer_t*);
+int _sc_eval_rlsimplist(sic_t*, sc_consumer_t*);
+int _sc_eval_rllist(sic_t*, sc_consumer_t*);
 
 sic_t* _sc_set_intrl(sic_t*);
 
@@ -74,8 +75,12 @@ int _sc_word(sic_t*, sc_consumer_t*, sc_rlint_t*);
 int _sc_alnum(sic_t*, sc_consumer_t*, sc_rlint_t*);
 int _sc_eol(sic_t*, sc_consumer_t*, sc_rlint_t*);
 
+int _sc_opt_multiple(sic_t*, sc_consumer_t*, sc_rlint_t*);
+int _sc_one_multiple(sic_t*, sc_consumer_t*, sc_rlint_t*);
+
 int _sc_internal_err(sic_t*, sc_consumer_t*, sc_rlint_t*);
 
 int _sc_tkn_cntnt(sic_t*, sc_consumer_t*, sc_rlint_t* rlint, const char*, char**);
+int _sc_rl_multiple(sic_t*, sc_consumer_t*, sc_rlint_t*, unsigned);
 
 #endif

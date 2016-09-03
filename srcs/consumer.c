@@ -167,6 +167,19 @@ void sc_cends(sc_consumer_t* consumer, const char* id, char** content)
   (*content)[consumer->_ptr - n] = 0;
 }
 
+char* sc_cts(sc_consumer_t* consumer)
+{
+  char* str;
+  intptr_t i, j = 0;
+
+  if ((str = malloc(consumer->bytes->size + 1)) == NULL) //TODO: Consider the 'real' size with _ptr
+    sc_ferr(1, "sc_cts() -> malloc()");
+  for (i = consumer->_ptr; i < consumer->bytes->size; ++i)
+    str[j++] = consumer->bytes->array[i];
+  str[j] = 0;
+  return (str);
+}
+
 void sc_cdestroy(sc_consumer_t* consumer)
 {
   sc_hdestroy(consumer->map);
