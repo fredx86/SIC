@@ -1,6 +1,7 @@
 #ifndef SIC_UTILS_H_
 #define SIC_UTILS_H_
 
+#include <stdio.h>
 #include <ctype.h>
 #include <errno.h>
 #include <stdlib.h>

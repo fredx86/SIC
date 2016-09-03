@@ -47,6 +47,7 @@ int sc_parse(sic_t* sic, const char* str, unsigned size)
   char* entry;
   sc_consumer_t* csmr;
 
+  sic->_err = 0;
   if ((entry = sc_hget(sic->rules[SC_RL_STRING], SIC_ENTRY)) == NULL)
   {
     fprintf(stderr, "%s: No entry point @%s\n", SIC_ERR, SIC_ENTRY);
@@ -104,11 +105,16 @@ int _sc_eval_rl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
     }
   }
 
-  /*if (i == SC_RL_COUNT)
+  if (i == SC_RL_COUNT) //Out of bounds
   {
+    //DBG
+    printf("Out of bounds for \"%s\"\n", rule->name);
+    fflush(stdout);
+
     free(rule->name);
     return (_sc_internal_err(sic, csmr, NULL));
-  }*/
+  }
+
   if (rule->save)
   {
     sc_cendb(sic->input, "save", &saved);
@@ -119,7 +125,6 @@ int _sc_eval_rl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
   printf("Result: %s %d\n", rule->name, result);
   fflush(stdout);
 
-  //free(rule->name); WUT ?!!!
   return (result);
 }
 
@@ -151,28 +156,21 @@ int _sc_eval_strrl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
 int _sc_eval_rlsimplist(sic_t* sic, sc_consumer_t* csmr)
 {
   sc_rl_t rule;
+  char result = 1;
   intptr_t save = sic->input->_ptr;
 
-  printf("< _sc_eval_rlsimplist\n");
-  fflush(stdout);
-
-  while (!SIC_CSMR_IS_EOI(csmr))
+  while (!SIC_CSMR_IS_EOI(csmr) && result)
   {
     sc_cmultiples(csmr, &sc_cwhitespace);
     if (!_sc_setrl(sic, csmr, &rule))
       return (0);
-    if (!_sc_eval_rl(sic, csmr, &rule))
-    {
-      sic->input->_ptr = save;
-      return (0);
-    }
+    result = _sc_eval_rl(sic, csmr, &rule);
     sc_cmultiples(csmr, &sc_cwhitespace);
+    free(rule.name);
   }
-
-  printf("> _sc_eval_rlsimplist\n");
-  fflush(stdout);
-
-  return (1);
+  if (!result)
+    sic->input->_ptr = save;
+  return (result);
 }
 
 //Eval list of rules WITH 'OR' operator
@@ -187,13 +185,13 @@ int _sc_eval_rllist(sic_t* sic, sc_consumer_t* csmr)
   tmp = sc_cts(csmr);
   if ((splitted = sc_split_tkn(tmp, "\"\'", '|')) == NULL)
     sc_ferr(1, "_sc_eval_rllist() -> sc_split_tkn() -> malloc()");
-  free(tmp);
   for (i = 0; splitted[i] && !result && !sic->_err; ++i)
   {
     ncsmr = sc_ccreate(splitted[i], strlen(splitted[i]));
     result = _sc_eval_rlsimplist(sic, ncsmr);
     sc_cdestroy(ncsmr);
   }
+  free(tmp);
   free(splitted);
   return (result);
 }
@@ -319,7 +317,15 @@ int _sc_one_multiple(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 int _sc_internal_err(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 {
   (void)csmr; //TODO Use context consumer !
-  fprintf(stderr, "%s: %s\n", SIC_ERR, rlint->name);
+  fprintf(stderr, "@%s\n", sc_cts(csmr));
+  if (rlint)
+  {
+    fprintf(stderr, "%s: %s\n", SIC_ERR, rlint->name);
+  }
+  else
+  {
+    fprintf(stderr, "%s: ???\n", SIC_ERR);
+  }
   sic->_err = 1;
   return (0);
 }
@@ -340,6 +346,7 @@ int _sc_rl_multiple(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint, unsigned
       return (0);
   }
   while (_sc_eval_rl(sic, csmr, &rule));
+  free(rule.name);
   return (1);
 }
 

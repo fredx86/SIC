@@ -56,18 +56,18 @@ unsigned sc_strcnt(const char* str, char c)
 
 //Split using 'cut' character a string. Don't cut the string if it is between tokens
 //Ex: sc_split_tkn("I am a \'flying cat\', "\'", ' ');
-//    Return: "I", "am", "a", "flying cat"
+//    Return: "I", "am", "a", "\'flying cat\'"
 //Future self, if you have to correct something in here, REWRITE THAT SHIT !
 char** sc_split_tkn(const char* str, const char* tokens, char cut)
 {
   char* cpy;
   char* tmp;
   char** array;
+  char in_tkn = 0;
   unsigned i, j = 0;
-  char in_tkn = 0, tkn = 0;
   char escape = (*str == '\\' ? 1 : 0);
 
-  if ((array = malloc(sizeof(*array) * (sc_strcnt(str, cut) + 1))) == NULL)
+  if ((array = malloc(sizeof(*array) * (sc_strcnt(str, cut) + 2))) == NULL)
     return (NULL);
   if ((cpy = sc_strdup(str)) == NULL)
     return (NULL);
@@ -80,20 +80,16 @@ char** sc_split_tkn(const char* str, const char* tokens, char cut)
       continue;
     }
     if (!in_tkn && !escape && strchr(tokens, str[i]))
-    {
       in_tkn = str[i];
-      tkn = 1;
-    }
     else if (!in_tkn && str[i] == cut)
     {
-      cpy[(tkn ? i - 1 : i)] = 0; //Remove end token
-      array[j++] = (tkn ? tmp + 1 : tmp); //Remove start token
+      cpy[i] = 0;
+      array[j++] = tmp;
       tmp = cpy + i + 1;
-      tkn = 0;
     }
     escape = (str[i] == '\\' ? 1 : 0);
   }
-  array[j++] = (tkn ? tmp + 1 : tmp);
+  array[j++] = tmp;
   array[j] = NULL;
   return (array);
 }

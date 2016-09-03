@@ -79,6 +79,7 @@ int _sc_opt_multiple(sic_t*, sc_consumer_t*, sc_rlint_t*);
 int _sc_one_multiple(sic_t*, sc_consumer_t*, sc_rlint_t*);
 
 int _sc_internal_err(sic_t*, sc_consumer_t*, sc_rlint_t*);
+//TODO Internal error => Error message, Rule/Method
 
 int _sc_tkn_cntnt(sic_t*, sc_consumer_t*, sc_rlint_t* rlint, const char*, char**);
 int _sc_rl_multiple(sic_t*, sc_consumer_t*, sc_rlint_t*, unsigned);
