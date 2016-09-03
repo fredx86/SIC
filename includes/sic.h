@@ -48,7 +48,6 @@ typedef struct sc_s_rl
 sic_t* sc_create();
 int sc_load_file(sic_t*, const char*);
 void sc_add_srule(sic_t*, const char*, const char*);
-//int sbnf_add_frule(sic_t*, const char*, );
 
 int sc_parse(sic_t*, const char*, unsigned);
 
@@ -67,7 +66,6 @@ int _sc_eval_rllist(sic_t*, sc_consumer_t*);
 
 sic_t* _sc_set_intrl(sic_t*);
 
-int _sc_char(sic_t*, sc_consumer_t*, sc_rlint_t*);
 int _sc_string(sic_t*, sc_consumer_t*, sc_rlint_t*);
 int _sc_ncstring(sic_t*, sc_consumer_t*, sc_rlint_t*);
 int _sc_optional(sic_t*, sc_consumer_t*, sc_rlint_t*);
@@ -87,7 +85,8 @@ int _sc_byte(sic_t*, sc_consumer_t*, sc_rlint_t*);
 
 int _sc_internal_err(sic_t*, sc_consumer_t*, const char*, const char*);
 
-int _sc_tkn_cntnt(sc_consumer_t*, sc_rlint_t* rlint, const char*, char**);
+int _sc_tkn_cntnt(sc_consumer_t*, sc_rlint_t*, const char*, char, char**);
 int _sc_rl_multiple(sic_t*, sc_consumer_t*, sc_rlint_t*, unsigned);
+int _sc_line_to_rule(sic_t*, const char*);
 
 #endif

@@ -37,8 +37,9 @@ int sc_cidentifier(sc_consumer_t*);
 int sc_cwhitespace(sc_consumer_t*);
 int sc_cprint(sc_consumer_t*);
 int sc_cmultiples(sc_consumer_t*, sc_csmrfunc);
+int sc_ctoeoi(sc_consumer_t*);
 
-int sc_ctkn(sc_consumer_t*, char, char);
+int sc_ctkn(sc_consumer_t*, const char*, char);
 
 void sc_cstart(sc_consumer_t*, const char*);
 void sc_cendb(sc_consumer_t*, const char*, sc_bytes_t**);

@@ -125,23 +125,33 @@ int sc_cmultiples(sc_consumer_t* consumer, sc_csmrfunc func)
   return (1);
 }
 
+int sc_ctoeoi(sc_consumer_t* consumer)
+{
+  consumer->_ptr = consumer->bytes->size;
+  return (1);
+}
+
 //Consume everything between 2 tokens
 //Considers escape characters ('\')
-int sc_ctkn(sc_consumer_t* consumer, char start_token, char end_token)
+int sc_ctkn(sc_consumer_t* consumer, const char* tokens, char identical)
 {
   char escape = 0;
+  unsigned tkn = 1;
   intptr_t save = consumer->_ptr;
 
-  if (SIC_CSMR_IS_EOI(consumer) || SIC_CSMR_CHAR(consumer) != start_token)
+  if (SIC_CSMR_IS_EOI(consumer) || SIC_CSMR_CHAR(consumer) != tokens[0])
     return (0);
   ++consumer->_ptr;
-  while (!SIC_CSMR_IS_EOI(consumer))
+  for (; !SIC_CSMR_IS_EOI(consumer) && tkn > 0; ++consumer->_ptr)
   {
-    if (SIC_CSMR_CHAR(consumer) == end_token && !escape)
-      return (SIC_CSMR_INCR(consumer, 1));
+    if (!identical && SIC_CSMR_CHAR(consumer) == tokens[0] && !escape)
+      ++tkn;
+    else if (SIC_CSMR_CHAR(consumer) == tokens[1] && !escape)
+      --tkn;
     escape = (SIC_CSMR_CHAR(consumer) == '\\' ? 1 : 0);
-    ++consumer->_ptr;
   }
+  if (tkn == 0)
+    return (1);
   consumer->_ptr = save;
   return (0);
 }

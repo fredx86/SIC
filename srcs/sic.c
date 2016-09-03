@@ -1,7 +1,6 @@
 #include "sic.h"
 
 static sc_rlint_t _int_rules[] = {
-  { "'",        "CHAR",             &_sc_char },
   { "\"",       "STRING",           &_sc_string },
   { "`",        "NO_CASE_STRING",   &_sc_ncstring },
   { "[",        "OPTIONAL",         &_sc_optional },
@@ -32,9 +31,15 @@ sic_t* sc_create()
 
 int sc_load_file(sic_t* sic, const char* filepath)
 {
-  (void)sic;
-  (void)filepath;
-  return (0);
+  FILE* file;
+  char buff[4096];
+
+  if ((file = fopen(filepath, "r")) == NULL)
+    return (0);
+  while (fgets(buff, 4096, file)) //TODO Replace w/ getline
+    _sc_line_to_rule(sic, buff); //TODO Warnings and such...
+  fclose(file);
+  return (1);
 }
 
 void sc_add_srule(sic_t* sic, const char* rule, const char* str)
@@ -188,21 +193,12 @@ sic_t* _sc_set_intrl(sic_t* sic)
   return (sic);
 }
 
-int _sc_char(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
-{
-  char c;
-
-  if (!sc_cread(csmr, &c) || !sc_ctxt(csmr, rlint->rule, 0))
-    return (_sc_internal_err(sic, csmr, SIC_ERR_RULE_ERRONEOUS, rlint->name));
-  return (sc_cchar(sic->input, c));
-}
-
 int _sc_string(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 {
   char* str;
   int has_read = 0;
 
-  if (!_sc_tkn_cntnt(csmr, rlint, "\"\"", &str))
+  if (!_sc_tkn_cntnt(csmr, rlint, "\"\"", 1, &str))
     return (_sc_internal_err(sic, csmr, SIC_ERR_RULE_ERRONEOUS, rlint->name));
   has_read = sc_ctxt(sic->input, str, 0);
   free(str);
@@ -214,7 +210,7 @@ int _sc_ncstring(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
   char* str;
   int has_read = 0;
 
-  if (!_sc_tkn_cntnt(csmr, rlint, "``", &str))
+  if (!_sc_tkn_cntnt(csmr, rlint, "``", 1, &str))
     return (_sc_internal_err(sic, csmr, SIC_ERR_RULE_ERRONEOUS, rlint->name));
   has_read = sc_ctxt(sic->input, str, 1);
   free(str);
@@ -226,7 +222,7 @@ int _sc_optional(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
   char* str;
   sc_consumer_t* ncsmr;
 
-  if (!_sc_tkn_cntnt(csmr, rlint, "[]", &str))
+  if (!_sc_tkn_cntnt(csmr, rlint, "[]", 0, &str))
     return (_sc_internal_err(sic, csmr, SIC_ERR_RULE_ERRONEOUS, rlint->name));
   ncsmr = sc_ccreate(str, strlen(str));
   _sc_eval_rllist(sic, ncsmr);
@@ -325,6 +321,28 @@ int _sc_internal_err(sic_t* sic, sc_consumer_t* csmr, const char* e, const char*
   return (0);
 }
 
+//Use after a rule => Return content between 2 rule tokens
+//Ex: After rule 'STRING' -> hello world"
+//    Redo consumer pointer using size of rule -> "hello world"
+//    Set 'str' as the content between tokens -> hello world
+int _sc_tkn_cntnt(sc_consumer_t* csmr, sc_rlint_t* rlint, const char* tokens, char identical, char** str)
+{
+  sc_bytes_t* cntnt;
+  unsigned len = strlen(rlint->rule);
+
+  csmr->_ptr -= len;
+  sc_cstart(csmr, "token");
+  if (!sc_ctkn(csmr, tokens, identical))
+    return (0);
+  sc_cendb(csmr, "token", &cntnt);
+  sc_berase(cntnt, 0, 1);
+  sc_berase(cntnt, cntnt->size - 1, 1);
+  sc_bappc(cntnt, 0);
+  *str = cntnt->array;
+  free(cntnt);
+  return (1);
+}
+
 //Evaluate the next given rule. Loop on the input until the rule stops to fit.
 //MUST fit at least 'n' times
 int _sc_rl_multiple(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint, unsigned n)
@@ -345,24 +363,25 @@ int _sc_rl_multiple(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint, unsigned
   return (1);
 }
 
-//Use after a rule => Return content between 2 rule tokens
-//Ex: After rule 'STRING' -> hello world"
-//    Redo consumer pointer using size of rule -> "hello world"
-//    Set 'str' as the content between tokens -> hello world
-int _sc_tkn_cntnt(sc_consumer_t* csmr, sc_rlint_t* rlint, const char* tokens, char** str)
+int _sc_line_to_rule(sic_t* sic, const char* line)
 {
-  sc_bytes_t* cntnt;
-  unsigned len = strlen(rlint->rule);
+  char* rulename;
+  char* rulecntnt;
+  sc_consumer_t* csmr;
 
-  csmr->_ptr -= len;
-  sc_cstart(csmr, "token");
-  if (!sc_ctkn(csmr, tokens[0], tokens[1]))
+  csmr = sc_ccreate(line, strlen(line));
+  sc_cmultiples(csmr, &sc_cwhitespace);
+  sc_cstart(csmr, "name");
+  if (!sc_cidentifier(csmr))
     return (0);
-  sc_cendb(csmr, "token", &cntnt);
-  sc_berase(cntnt, 0, 1);
-  sc_berase(cntnt, cntnt->size - 1, 1);
-  sc_bappc(cntnt, 0);
-  *str = cntnt->array;
-  free(cntnt);
+  sc_cends(csmr, "name", &rulename);
+  sc_cmultiples(csmr, &sc_cwhitespace);
+  if (!sc_cchar(csmr, '='))
+    return (0);
+  sc_cstart(csmr, "content");
+  sc_ctoeoi(csmr);
+  sc_cends(csmr, "content", &rulecntnt);
+  sc_add_srule(sic, rulename, rulecntnt);
+  sc_cdestroy(csmr);
   return (1);
 }
