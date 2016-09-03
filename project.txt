@@ -27,6 +27,11 @@ S aving
 I mplemention of a
 C ontext-Free-Grammar
 
+//TODO
+//List for save + 'getters'
+
+//TODO
+//Memory allocation / free to improve
 
 //TODO '('
 //  Ex: 'l' 'a' 'b' | 'c' 'd'  ->  "lcd" => FALSE
