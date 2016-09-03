@@ -14,6 +14,7 @@ static sc_rlint_t _int_rules[] = {
   { "eol",      "END_OF_LINE",      &_sc_eol },
   { "*",        "OPT_MULTIPLE",     &_sc_opt_multiple },
   { "+",        "ONE_MULTIPLE",     &_sc_one_multiple },
+  { "~",        "BYTE",             &_sc_byte },
   { NULL, NULL, NULL }
 };
 
@@ -70,13 +71,13 @@ int _sc_setrl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
   rule->save = NULL;
   sc_cstart(csmr, "rule");
   if (!sc_cof(csmr, SIC_SYMBOLS) && !(identifier = sc_cidentifier(csmr)))
-    return (_sc_internal_err(sic, csmr, NULL));
+    return (_sc_internal_err(sic, csmr, SIC_ERR_RULE_MISSING, NULL));
   sc_cends(csmr, "rule", &rule->name);
   if (identifier && sc_cchar(csmr, ':'))
   {
     sc_cstart(csmr, "save");
     if (!sc_cidentifier(csmr))
-      return (_sc_internal_err(sic, csmr, NULL));
+      return (_sc_internal_err(sic, csmr, SIC_ERR_SAVE_MISSING, NULL));
     sc_cends(csmr, "save", &rule->save);
   }
   return (1);
@@ -91,40 +92,21 @@ int _sc_eval_rl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
 
   if (rule->save)
     sc_cstart(sic->input, "save");
-
-  //DBG
   for (i = 0; i < SC_RL_COUNT; ++i)
   {
-    printf("Eval: %s %d %d\n", rule->name, i, SC_RL_COUNT);
-    fflush(stdout);
-
     if (sc_hhas(sic->rules[i], rule->name))
     {
       result = funcs[i](sic, csmr, rule);
       break;
     }
   }
-
   if (i == SC_RL_COUNT) //Out of bounds
-  {
-    //DBG
-    printf("Out of bounds for \"%s\"\n", rule->name);
-    fflush(stdout);
-
-    free(rule->name);
-    return (_sc_internal_err(sic, csmr, NULL));
-  }
-
+    return (_sc_internal_err(sic, csmr, SIC_ERR_RULE_NOT_FOUND, rule->name));
   if (rule->save)
   {
     sc_cendb(sic->input, "save", &saved);
     sc_hadd(sic->save, (void*)rule->save, saved);
   }
-
-  //DBG
-  printf("Result: %s %d\n", rule->name, result);
-  fflush(stdout);
-
   return (result);
 }
 
@@ -211,7 +193,7 @@ int _sc_char(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
   char c;
 
   if (!sc_cread(csmr, &c) || !sc_ctxt(csmr, rlint->rule, 0))
-    return (_sc_internal_err(sic, csmr, rlint));
+    return (_sc_internal_err(sic, csmr, SIC_ERR_RULE_ERRONEOUS, rlint->name));
   return (sc_cchar(sic->input, c));
 }
 
@@ -220,8 +202,8 @@ int _sc_string(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
   char* str;
   int has_read = 0;
 
-  if (!_sc_tkn_cntnt(sic, csmr, rlint, "\"\"", &str))
-    return (0);
+  if (!_sc_tkn_cntnt(csmr, rlint, "\"\"", &str))
+    return (_sc_internal_err(sic, csmr, SIC_ERR_RULE_ERRONEOUS, rlint->name));
   has_read = sc_ctxt(sic->input, str, 0);
   free(str);
   return (has_read);
@@ -232,8 +214,8 @@ int _sc_ncstring(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
   char* str;
   int has_read = 0;
 
-  if (!_sc_tkn_cntnt(sic, csmr, rlint, "``", &str))
-    return (0);
+  if (!_sc_tkn_cntnt(csmr, rlint, "``", &str))
+    return (_sc_internal_err(sic, csmr, SIC_ERR_RULE_ERRONEOUS, rlint->name));
   has_read = sc_ctxt(sic->input, str, 1);
   free(str);
   return (has_read);
@@ -244,8 +226,8 @@ int _sc_optional(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
   char* str;
   sc_consumer_t* ncsmr;
 
-  if (!_sc_tkn_cntnt(sic, csmr, rlint, "[]", &str))
-    return (0);
+  if (!_sc_tkn_cntnt(csmr, rlint, "[]", &str))
+    return (_sc_internal_err(sic, csmr, SIC_ERR_RULE_ERRONEOUS, rlint->name));
   ncsmr = sc_ccreate(str, strlen(str));
   _sc_eval_rllist(sic, ncsmr);
   sc_cdestroy(ncsmr);
@@ -313,19 +295,32 @@ int _sc_one_multiple(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
   return (_sc_rl_multiple(sic, csmr, rlint, 1));
 }
 
-//Call whenever there is an error linked to the sic.
-int _sc_internal_err(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
+int _sc_byte(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 {
-  (void)csmr; //TODO Use context consumer !
-  fprintf(stderr, "@%s\n", sc_cts(csmr));
-  if (rlint)
-  {
-    fprintf(stderr, "%s: %s\n", SIC_ERR, rlint->name);
-  }
-  else
-  {
-    fprintf(stderr, "%s: ???\n", SIC_ERR);
-  }
+  char* bytes;
+  int has_read = 0;
+
+  sc_cstart(csmr, "byte");
+  if (!sc_cmultiples(csmr, &sc_cdigit))
+    return (_sc_internal_err(sic, csmr, SIC_ERR_RULE_ERRONEOUS, rlint->name));
+  sc_cends(csmr, "byte", &bytes);
+  has_read = sc_cchar(sic->input, atoi(bytes));
+  free(bytes);
+  return (has_read);
+}
+
+//Call whenever there is an error linked to the sic.
+int _sc_internal_err(sic_t* sic, sc_consumer_t* csmr, const char* e, const char* p)
+{
+  intptr_t i;
+
+  fprintf(stderr, (p ? "%s: %s \'%s\'\n\t" : "%s: %s\n\t"), SIC_ERR, e, p);
+  fflush(stderr);
+  sc_bprint(csmr->bytes, stderr, 0);
+  fputs("\n\t", stderr);
+  for (i = 0; i < csmr->_ptr; ++i)
+    fputc(' ', stderr);
+  fputs("^\n", stderr);
   sic->_err = 1;
   return (0);
 }
@@ -354,7 +349,7 @@ int _sc_rl_multiple(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint, unsigned
 //Ex: After rule 'STRING' -> hello world"
 //    Redo consumer pointer using size of rule -> "hello world"
 //    Set 'str' as the content between tokens -> hello world
-int _sc_tkn_cntnt(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint, const char* tokens, char** str)
+int _sc_tkn_cntnt(sc_consumer_t* csmr, sc_rlint_t* rlint, const char* tokens, char** str)
 {
   sc_bytes_t* cntnt;
   unsigned len = strlen(rlint->rule);
@@ -362,12 +357,11 @@ int _sc_tkn_cntnt(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint, const char
   csmr->_ptr -= len;
   sc_cstart(csmr, "token");
   if (!sc_ctkn(csmr, tokens[0], tokens[1]))
-    return (_sc_internal_err(sic, csmr, rlint));
+    return (0);
   sc_cendb(csmr, "token", &cntnt);
   sc_berase(cntnt, 0, 1);
   sc_berase(cntnt, cntnt->size - 1, 1);
-  if (sc_bappc(cntnt, 0) == NULL)
-    return (_sc_internal_err(sic, csmr, rlint));
+  sc_bappc(cntnt, 0);
   *str = cntnt->array;
   free(cntnt);
   return (1);
