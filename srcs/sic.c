@@ -158,9 +158,10 @@ int _sc_eval_rllist(sic_t* sic, sc_consumer_t* csmr)
     sc_cmultiples(csmr, &sc_cwhitespace);
     free(rule.name);
   }
+  if (!result)
+    sic->input->_ptr = save;
   if (!result && !sic->_err && c == '|')
   {
-    sic->input->_ptr = save;
     ++csmr->_ptr;
     return (_sc_eval_rllist(sic, csmr));
   }
