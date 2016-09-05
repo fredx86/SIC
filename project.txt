@@ -28,3 +28,6 @@ eol                   end of line: '\r\n', '\r' or \'n'
 
 //TODO
 //Memory allocation / free to improve
+
+//TODO Implement HTTP
+//https://www.w3.org/Protocols/HTTP/1.0/spec.html
