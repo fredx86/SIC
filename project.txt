@@ -1,4 +1,8 @@
-Context free grammar
+S aving
+I mplemention of a
+C ontext-Free-Grammar
+
+_______________________________________________________________________________
 
 Basics rules
 
@@ -17,15 +21,6 @@ word
 alnum
 ~<byte>               Ex: ~127 for DEL
 eol                   end of line: '\r\n', '\r' or \'n'
-
-
-
-thing = digit | OEL | '%'
-_main_ = thing:header
-
-S aving
-I mplemention of a
-C ontext-Free-Grammar
 
 //TODO
 //List for save + 'getters'

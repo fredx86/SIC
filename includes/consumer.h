@@ -17,6 +17,7 @@ typedef int (*sc_csmrfunc)(sc_consumer_t*);
 
 #define SIC_CSMR_CHAR(consumer)      (consumer->bytes->array[consumer->_ptr])
 #define SIC_CSMR_STR(consumer)       (consumer->bytes->array + consumer->_ptr)
+#define SIC_CSMR_READ(consumer, c)   (SIC_CSMR_IS_EOI(consumer) ? 0 : (*c = SIC_CSMR_CHAR(consumer)) ? 1 : 1)
 #define SIC_CSMR_IS_EOI(consumer)    (consumer->_ptr >= consumer->bytes->size)
 #define SIC_CSMR_INCR(consumer, n)   (n == 1 ? ++consumer->_ptr : _sc_cincr(consumer, n))
 

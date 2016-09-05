@@ -82,7 +82,10 @@ int _sc_setrl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
   {
     sc_cstart(csmr, "save");
     if (!sc_cidentifier(csmr))
+    {
+      free(rule->save);
       return (_sc_internal_err(sic, csmr, SIC_ERR_SAVE_MISSING, NULL));
+    }
     sc_cends(csmr, "save", &rule->save);
   }
   return (1);
@@ -110,7 +113,7 @@ int _sc_eval_rl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
   if (rule->save)
   {
     sc_cendb(sic->input, "save", &saved);
-    sc_hadd(sic->save, (void*)rule->save, saved);
+    sc_hadd(sic->save, (void*)rule->save, saved); //TODO Multiple rules
   }
   return (result);
 }
@@ -139,48 +142,29 @@ int _sc_eval_strrl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
   return (result);
 }
 
-//Eval list of rules WITHOUT 'OR' operator
-int _sc_eval_rlsimplist(sic_t* sic, sc_consumer_t* csmr)
+int _sc_eval_rllist(sic_t* sic, sc_consumer_t* csmr)
 {
+  char c;
   sc_rl_t rule;
   char result = 1;
   intptr_t save = sic->input->_ptr;
 
-  while (!SIC_CSMR_IS_EOI(csmr) && result)
+  while (SIC_CSMR_READ(csmr, &c) && c != '|' && !sic->_err)
   {
     sc_cmultiples(csmr, &sc_cwhitespace);
     if (!_sc_setrl(sic, csmr, &rule))
       return (0);
-    result = _sc_eval_rl(sic, csmr, &rule);
+    result = _sc_eval_rl(sic, csmr, &rule) && result;
     sc_cmultiples(csmr, &sc_cwhitespace);
     free(rule.name);
   }
-  if (!result)
-    sic->input->_ptr = save;
-  return (result);
-}
-
-//Eval list of rules WITH 'OR' operator
-int _sc_eval_rllist(sic_t* sic, sc_consumer_t* csmr)
-{
-  char* tmp;
-  unsigned i;
-  char** splitted;
-  char result = 0;
-  sc_consumer_t* ncsmr;
-
-  tmp = sc_cts(csmr);
-  if ((splitted = sc_split_tkn(tmp, "\"\'", '|')) == NULL)
-    sc_ferr(1, "_sc_eval_rllist() -> sc_split_tkn() -> malloc()");
-  for (i = 0; splitted[i] && !result && !sic->_err; ++i)
+  if (!result && !sic->_err && c == '|')
   {
-    ncsmr = sc_ccreate(splitted[i], strlen(splitted[i]));
-    result = _sc_eval_rlsimplist(sic, ncsmr);
-    sc_cdestroy(ncsmr);
+    sic->input->_ptr = save;
+    ++csmr->_ptr;
+    return (_sc_eval_rllist(sic, csmr));
   }
-  free(tmp);
-  free(splitted);
-  return (result);
+  return (sic->_err ? 0 : result);
 }
 
 //Add to the SIC the internal rules
