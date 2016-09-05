@@ -4,6 +4,7 @@ static sc_rlint_t _int_rules[] = {
   { "\"",       "STRING",           &_sc_string },
   { "`",        "NO_CASE_STRING",   &_sc_ncstring },
   { "[",        "OPTIONAL",         &_sc_optional },
+  { "(",        "PRIORITY",         &_sc_priority },
   { "$",        "WHITESPACES",      &_sc_whitespaces },
   { "digit",    "DIGIT",            &_sc_digit },
   { "num",      "NUMBER",           &_sc_num },
@@ -165,6 +166,7 @@ int _sc_eval_rllist(sic_t* sic, sc_consumer_t* csmr)
     ++csmr->_ptr;
     return (_sc_eval_rllist(sic, csmr));
   }
+  //sc_cdestroy(csmr);
   return (sic->_err ? 0 : result);
 }
 
@@ -204,16 +206,13 @@ int _sc_ncstring(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 
 int _sc_optional(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 {
-  char* str;
-  sc_consumer_t* ncsmr;
-
-  if (!_sc_tkn_cntnt(csmr, rlint, "[]", 0, &str))
-    return (_sc_internal_err(sic, csmr, SIC_ERR_RULE_ERRONEOUS, rlint->name));
-  ncsmr = sc_ccreate(str, strlen(str));
-  _sc_eval_rllist(sic, ncsmr);
-  sc_cdestroy(ncsmr);
-  free(str);
+  _sc_eval_btwn(sic, csmr, rlint, "[]", 0);
   return (1);
+}
+
+int _sc_priority(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
+{
+  return (_sc_eval_btwn(sic, csmr, rlint, "()", 0));
 }
 
 int _sc_whitespaces(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
@@ -346,6 +345,20 @@ int _sc_rl_multiple(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint, unsigned
   while (_sc_eval_rl(sic, csmr, &rule));
   free(rule.name);
   return (1);
+}
+
+int _sc_eval_btwn(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint, const char* tokens, char identical)
+{
+  char* str;
+  char result;
+  sc_consumer_t* ncsmr;
+
+  if (!_sc_tkn_cntnt(csmr, rlint, tokens, identical, &str))
+    return (_sc_internal_err(sic, csmr, SIC_ERR_RULE_ERRONEOUS, rlint->name));
+  ncsmr = sc_ccreate(str, strlen(str));
+  result = _sc_eval_rllist(sic, ncsmr);
+  free(str);
+  return (result);
 }
 
 int _sc_line_to_rule(sic_t* sic, const char* line)
