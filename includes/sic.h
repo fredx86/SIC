@@ -3,14 +3,14 @@
 
 #include "consumer.h"
 
+#define SIC_ENTRY               "_main_"
 #define SIC_ERR                 "SIC Fatal Error"
 #define SIC_ERR_RULE_MISSING    "Expected rule"
 #define SIC_ERR_SAVE_MISSING    "Expected save identifier"
 #define SIC_ERR_RULE_NOT_FOUND  "Rule not found"
 #define SIC_ERR_RULE_ERRONEOUS  "Rule is erroneous"
 
-#define SIC_ENTRY               "_main_"
-#define SIC_SYMBOLS             "\'\"`[($*+~"
+#define SC_RL_SYM_SIZE          15
 
 typedef enum sc_e_rules
 {
@@ -24,6 +24,7 @@ typedef struct s_sic
   sc_consumer_t* input;
   sc_hashmp_t* rules[SC_RL_COUNT];
   sc_hashmp_t* save;
+  char _symbols[SC_RL_SYM_SIZE];
   char _err;
 } sic_t;
 
@@ -37,6 +38,7 @@ typedef struct sc_s_rlint
   const char* rule;
   const char* name;
   sc_rlintfunc func;
+  char symbol;
 } sc_rlint_t; //Internal rule
 
 typedef struct sc_s_rl

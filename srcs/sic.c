@@ -1,21 +1,21 @@
 #include "sic.h"
 
 static sc_rlint_t _int_rules[] = {
-  { "\"",       "STRING",           &_sc_string },
-  { "`",        "NO_CASE_STRING",   &_sc_ncstring },
-  { "[",        "OPTIONAL",         &_sc_optional },
-  { "(",        "PRIORITY",         &_sc_priority },
-  { "$",        "WHITESPACES",      &_sc_whitespaces },
-  { "digit",    "DIGIT",            &_sc_digit },
-  { "num",      "NUMBER",           &_sc_num },
-  { "alpha",    "ALPHA",            &_sc_alpha },
-  { "word",     "WORD",             &_sc_word },
-  { "alnum",    "ALPHA_NUMERIC",    &_sc_alnum },
-  { "eol",      "END_OF_LINE",      &_sc_eol },
-  { "*",        "OPT_MULTIPLE",     &_sc_opt_multiple },
-  { "+",        "ONE_MULTIPLE",     &_sc_one_multiple },
-  { "~",        "BYTE",             &_sc_byte },
-  { NULL, NULL, NULL }
+  { "\"",       "STRING",           &_sc_string,        1 },
+  { "`",        "NO_CASE_STRING",   &_sc_ncstring,      1 },
+  { "[",        "OPTIONAL",         &_sc_optional,      1 },
+  { "(",        "PRIORITY",         &_sc_priority,      1 },
+  { "$",        "WHITESPACES",      &_sc_whitespaces,   1 },
+  { "digit",    "DIGIT",            &_sc_digit,         0 },
+  { "num",      "NUMBER",           &_sc_num,           0 },
+  { "alpha",    "ALPHA",            &_sc_alpha,         0 },
+  { "word",     "WORD",             &_sc_word,          0 },
+  { "alnum",    "ALPHA_NUMERIC",    &_sc_alnum,         0 },
+  { "eol",      "END_OF_LINE",      &_sc_eol,           0 },
+  { "*",        "OPT_MULTIPLE",     &_sc_opt_multiple,  1 },
+  { "+",        "ONE_MULTIPLE",     &_sc_one_multiple,  1 },
+  { "~",        "BYTE",             &_sc_byte,          1 },
+  { NULL, NULL, NULL, 0 }
 };
 
 sic_t* sc_create()
@@ -76,7 +76,7 @@ int _sc_setrl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
   (void)sic;
   rule->save = NULL;
   sc_cstart(csmr, "rule");
-  if (!sc_cof(csmr, SIC_SYMBOLS) && !(identifier = sc_cidentifier(csmr)))
+  if (!sc_cof(csmr, sic->_symbols) && !(identifier = sc_cidentifier(csmr)))
     return (_sc_internal_err(sic, csmr, SIC_ERR_RULE_MISSING, NULL));
   sc_cends(csmr, "rule", &rule->name);
   if (identifier && sc_cchar(csmr, ':'))
@@ -170,13 +170,18 @@ int _sc_eval_rllist(sic_t* sic, sc_consumer_t* csmr)
   return (sic->_err ? 0 : result);
 }
 
-//Add to the SIC the internal rules
+//Add and update the internal rules to SIC
 sic_t* _sc_set_intrl(sic_t* sic)
 {
   unsigned i;
 
+  sic->_symbols[0] = 0;
   for (i = 0; _int_rules[i].rule; ++i)
+  {
     sc_hadd(sic->rules[SC_RL_INTERNAL], (void*)_int_rules[i].rule, &_int_rules[i]);
+    if (_int_rules[i].symbol)
+      strcat(sic->_symbols, _int_rules[i].rule);
+  }
   return (sic);
 }
 
