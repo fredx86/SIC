@@ -13,6 +13,7 @@ Basics rules
 `<string>`            No-case string
 <expr>:<identifier>   Save expression using 'identifier'
 [ expr ]              Optional expression
+( expr )              Priority expression
 $                     Optionals whitespaces
 digit
 num
@@ -27,7 +28,3 @@ eol                   end of line: '\r\n', '\r' or \'n'
 
 //TODO
 //Memory allocation / free to improve
-
-//TODO '('
-//  Ex: 'l' 'a' 'b' | 'c' 'd'  ->  "lcd" => FALSE
-//  Ex: 'l' ('a' 'b' | 'c' 'd') -> "lcd" => TRUE
