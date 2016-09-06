@@ -151,9 +151,8 @@ int _sc_eval_csmr_expr(sic_t* sic, sc_consumer_t* csmr)
     sc_cmultiples(csmr, &sc_cwhitespace);
     free(rule.name);
   }
-  if (!result)
-    sic->input->_ptr = save;
-  if (!result && !sic->_err && c == '|')
+  sic->input->_ptr = (!result ? save : sic->input->_ptr);
+  if (!result && c == '|' && !sic->_err)
   {
     ++csmr->_ptr;
     return (_sc_eval_csmr_expr(sic, csmr));
@@ -214,7 +213,7 @@ int _sc_ncstring(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 int _sc_optional(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 {
   _sc_eval_btwn(sic, csmr, rlint, "[]", 0);
-  return (1);
+  return (SC_RETVAL(sic, 1));
 }
 
 int _sc_priority(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
@@ -227,7 +226,7 @@ int _sc_whitespaces(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
   (void)rlint;
   (void)csmr;
   while (sc_cwhitespace(sic->input));
-  return (1);
+  return (SC_RETVAL(sic, 1));
 }
 
 int _sc_digit(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)

@@ -12,6 +12,8 @@
 
 #define SC_RL_SYM_SIZE          15
 
+#define SC_RETVAL(sic, x)       (sic->_err ? 0 : x)
+
 typedef enum sc_e_rules
 {
   SC_RL_INTERNAL = 0,
