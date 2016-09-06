@@ -31,3 +31,6 @@ eol                   end of line: '\r\n', '\r' or \'n'
 
 //TODO Implement HTTP
 //https://www.w3.org/Protocols/HTTP/1.0/spec.html
+
+//TODO
+//sic->last_rule => For error handling

@@ -63,7 +63,8 @@ int _sc_setrl(sic_t*, sc_consumer_t*, sc_rl_t*);
 int _sc_eval_rl(sic_t*, sc_consumer_t*, sc_rl_t*);
 int _sc_eval_intrl(sic_t*, sc_consumer_t*, sc_rl_t*);
 int _sc_eval_strrl(sic_t*, sc_consumer_t*, sc_rl_t*);
-int _sc_eval_rllist(sic_t*, sc_consumer_t*);
+int _sc_eval_csmr_expr(sic_t*, sc_consumer_t*);
+int _sc_eval_expr(sic_t*, const char*);
 
 sic_t* _sc_set_intrl(sic_t*);
 

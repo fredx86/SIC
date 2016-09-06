@@ -52,7 +52,6 @@ int sc_parse(sic_t* sic, const char* str, unsigned size)
 {
   char result;
   char* entry;
-  sc_consumer_t* csmr;
 
   sic->_err = 0;
   if ((entry = sc_hget(sic->rules[SC_RL_STRING], SIC_ENTRY)) == NULL)
@@ -61,10 +60,8 @@ int sc_parse(sic_t* sic, const char* str, unsigned size)
     return (0);
   }
   //TODO clear content of save !!!
-  csmr = sc_ccreate(entry, strlen(entry));
   sic->input = sc_ccreate(str, size);
-  result = _sc_eval_rllist(sic, csmr) && SIC_CSMR_IS_EOI(sic->input);
-  result = (sic->_err ? 0 : result);
+  result = _sc_eval_expr(sic, entry) && SIC_CSMR_IS_EOI(sic->input);
   sc_cdestroy(sic->input);
   return (result);
 }
@@ -131,19 +128,14 @@ int _sc_eval_intrl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
 int _sc_eval_strrl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
 {
   char* str;
-  int result;
-  sc_consumer_t* ncsmr;
 
   (void)csmr;
   if ((str = (char*)sc_hget(sic->rules[SC_RL_STRING], rule->name)) == NULL)
     return (0);
-  ncsmr = sc_ccreate(str, strlen(str));
-  result = _sc_eval_rllist(sic, ncsmr);
-  sc_cdestroy(ncsmr);
-  return (result);
+  return (_sc_eval_expr(sic, str));
 }
 
-int _sc_eval_rllist(sic_t* sic, sc_consumer_t* csmr)
+int _sc_eval_csmr_expr(sic_t* sic, sc_consumer_t* csmr)
 {
   char c;
   sc_rl_t rule;
@@ -164,10 +156,20 @@ int _sc_eval_rllist(sic_t* sic, sc_consumer_t* csmr)
   if (!result && !sic->_err && c == '|')
   {
     ++csmr->_ptr;
-    return (_sc_eval_rllist(sic, csmr));
+    return (_sc_eval_csmr_expr(sic, csmr));
   }
-  //sc_cdestroy(csmr);
   return (sic->_err ? 0 : result);
+}
+
+int _sc_eval_expr(sic_t* sic, const char* expr)
+{
+  int result;
+  sc_consumer_t* csmr;
+
+  csmr = sc_ccreate(expr, strlen(expr));
+  result = _sc_eval_csmr_expr(sic, csmr);
+  sc_cdestroy(csmr);
+  return (result);
 }
 
 //Add and update the internal rules to SIC
@@ -356,12 +358,10 @@ int _sc_eval_btwn(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint, const char
 {
   char* str;
   char result;
-  sc_consumer_t* ncsmr;
 
   if (!_sc_tkn_cntnt(csmr, rlint, tokens, identical, &str))
     return (_sc_internal_err(sic, csmr, SIC_ERR_RULE_ERRONEOUS, rlint->name));
-  ncsmr = sc_ccreate(str, strlen(str));
-  result = _sc_eval_rllist(sic, ncsmr);
+  result = _sc_eval_expr(sic, str);
   free(str);
   return (result);
 }
