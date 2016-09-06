@@ -70,7 +70,6 @@ int _sc_setrl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
 {
   int identifier = 0;
 
-  (void)sic;
   rule->save = NULL;
   sc_cstart(csmr, "rule");
   if (!sc_cof(csmr, sic->_symbols) && !(identifier = sc_cidentifier(csmr)))
