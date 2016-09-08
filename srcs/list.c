@@ -22,6 +22,8 @@ void sc_ladd(sc_list_t* list, void* val)
 
 void sc_ldestroy(sc_list_t* list)
 {
+  if (list->content)
+    free(list->content);
   free(list);
 }
 
