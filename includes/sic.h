@@ -1,6 +1,7 @@
 #ifndef SIC_H_
 #define SIC_H_
 
+#include "list.h"
 #include "consumer.h"
 
 #define SIC_ENTRY               "_main_"

@@ -34,3 +34,6 @@ eol                   end of line: '\r\n', '\r' or \'n'
 
 //TODO
 //sic->last_rule => For error handling
+
+//TODO
+//sc_cinit() and stuff...

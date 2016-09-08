@@ -6,7 +6,7 @@ sc_consumer_t* sc_ccreate(const char* str, unsigned size)
 
   if ((consumer = malloc(sizeof(*consumer))) == NULL)
     sc_ferr(1, "malloc() -> sc_ccreate()");
-  consumer->bytes = sc_bcreate(str, size);
+  consumer->bytes = sc_bcreate(str, size, NULL);
   consumer->map = sc_hcreate(1024, &sc_jenkins_hash, SC_KY_STRING);
   consumer->_ptr = 0;
   return (consumer);
@@ -164,7 +164,7 @@ void sc_cstart(sc_consumer_t* consumer, const char* id)
 void sc_cendb(sc_consumer_t* consumer, const char* id, sc_bytes_t** content)
 {
   intptr_t n = (intptr_t)sc_hget(consumer->map, (void*)id);
-  *content = sc_bcreate(consumer->bytes->array + n, consumer->_ptr - n);
+  *content = sc_bcreate(consumer->bytes->array + n, consumer->_ptr - n, NULL);
 }
 
 void sc_cends(sc_consumer_t* consumer, const char* id, char** content)

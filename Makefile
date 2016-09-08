@@ -2,6 +2,7 @@ SRCS			=	srcs/main.c 						\
 						srcs/bytes.c 						\
 						srcs/consumer.c					\
 						srcs/hashmap.c					\
+						srcs/list.c							\
 						srcs/sic.c							\
 						srcs/utils.c 						\
 

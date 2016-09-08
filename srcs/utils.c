@@ -93,3 +93,17 @@ char** sc_split_tkn(const char* str, const char* tokens, char cut)
   array[j] = NULL;
   return (array);
 }
+
+int sc_realloc(struct sc_s_alloc* elem, unsigned size, unsigned min)
+{
+  unsigned n = min;
+
+  if (size <= *elem->alloc)
+    return (0);
+  while (n <= size)
+    n = n << 1;
+  if ((*elem->data = realloc(*elem->data, n * elem->data_size)) == NULL)
+    sc_ferr(1, "realloc() -> sc_realloc()");
+  *elem->alloc = n;
+  return (1);
+ }

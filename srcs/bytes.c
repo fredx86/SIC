@@ -1,6 +1,6 @@
 #include "bytes.h"
 
-sc_bytes_t* sc_bcreate(const char* b, unsigned size)
+sc_bytes_t* sc_bcreate(const char* b, unsigned size, sc_autoalloc_func alloc)
 {
   sc_bytes_t* bytes;
 
@@ -9,6 +9,7 @@ sc_bytes_t* sc_bcreate(const char* b, unsigned size)
   bytes->array = NULL;
   bytes->size = 0;
   bytes->_alloc = 0;
+  bytes->_alloc_func = (alloc == NULL ? sc_realloc : alloc);
   return (sc_bcpy(bytes, b, size));
 }
 
@@ -92,31 +93,6 @@ void sc_bdestroy(sc_bytes_t* bytes)
   free(bytes);
 }
 
-int _sc_brealloc(sc_bytes_t* bytes, unsigned size)
-{
-  char *tmp;
-  unsigned n = SIC_BSIZE;
-
-  if (size >= bytes->_alloc)
-  {
-    while (n <= size)
-      n = n << 1;
-    if ((tmp = malloc(n)) == NULL)
-      sc_ferr(1, "malloc() -> _sc_brealloc()");
-    memcpy(tmp, bytes->array, bytes->size);
-    if (bytes->array)
-      free(bytes->array);
-    bytes->array = tmp;
-    bytes->_alloc = n;
-  }
-  return (1);
-}
-
-int _sc_balloc(sc_bytes_t* bytes, unsigned size)
-{
-  return (size ? _sc_brealloc(bytes, bytes->size + size) : 1);
-}
-
 int _sc_bvalid(sc_bytes_t* bytes, unsigned* pos, unsigned* count)
 {
   if (*pos + *count < bytes->size) //If inside of bytes
@@ -129,4 +105,17 @@ int _sc_bvalid(sc_bytes_t* bytes, unsigned* pos, unsigned* count)
   }
   *count = bytes->size - *pos;
   return (1);
+}
+
+void _sc_balloc(sc_bytes_t* bytes, unsigned size)
+{
+  struct sc_s_alloc alloc;
+
+  alloc = (struct sc_s_alloc) {
+    .data = (void**)&bytes->array,
+    .data_size = sizeof(*bytes->array),
+    .size = &bytes->size,
+    .alloc = &bytes->_alloc
+  };
+  bytes->_alloc_func(&alloc, bytes->size + size, 32);
 }

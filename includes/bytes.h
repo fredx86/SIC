@@ -5,16 +5,15 @@
 #include <string.h>
 #include "utils.h"
 
-#define SIC_BSIZE 1024
-
 typedef struct sc_s_bytes
 {
   char* array;
   unsigned size;
   unsigned _alloc;
+  sc_autoalloc_func _alloc_func;
 } sc_bytes_t;
 
-sc_bytes_t* sc_bcreate(const char*, unsigned);
+sc_bytes_t* sc_bcreate(const char*, unsigned, sc_autoalloc_func);
 sc_bytes_t* sc_bcpy(sc_bytes_t*, const char*, unsigned);
 sc_bytes_t* sc_bapp(sc_bytes_t*, const char*, unsigned);
 sc_bytes_t* sc_bappb(sc_bytes_t*, const sc_bytes_t*);
@@ -29,8 +28,7 @@ void sc_bdestroy(sc_bytes_t*);
 
 ///Internal logic
 
-int _sc_brealloc(sc_bytes_t*, unsigned);
-int _sc_balloc(sc_bytes_t*, unsigned);
+void _sc_balloc(sc_bytes_t*, unsigned);
 int _sc_bvalid(sc_bytes_t*, unsigned*, unsigned*);
 
 #endif
