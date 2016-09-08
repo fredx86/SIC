@@ -338,16 +338,20 @@ int _sc_rl_multiple(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint, unsigned
 {
   unsigned i;
   sc_rl_t rule;
+  intptr_t save;
 
   (void)rlint;
   if (!_sc_setrl(sic, csmr, &rule))
     return (0);
+  save = csmr->_ptr;
   for (i = 0; i < n; ++i)
   {
     if (!_sc_eval_rl(sic, csmr, &rule))
       return (0);
+    csmr->_ptr = save;
   }
-  while (_sc_eval_rl(sic, csmr, &rule));
+  while (_sc_eval_rl(sic, csmr, &rule))
+    csmr->_ptr = save;
   free(rule.name);
   return (1);
 }
