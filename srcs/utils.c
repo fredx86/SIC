@@ -1,9 +1,15 @@
 #include "utils.h"
 
-void sc_ferr(int r, const char* e)
+int sc_ierr(int r, const char* e)
 {
   perror(e);
-  exit(r);
+  return (r);
+}
+
+void* sc_perr(const char* e)
+{
+  perror(e);
+  return(NULL);
 }
 
 int sc_strcmp(const char* a, unsigned sa, const char* b, unsigned sb, unsigned cmp)
@@ -99,11 +105,11 @@ int sc_realloc(struct sc_s_alloc* elem, unsigned size, unsigned min)
   unsigned n = min;
 
   if (size <= *elem->alloc)
-    return (0);
+    return (1);
   while (n <= size)
     n = n << 1;
   if ((*elem->data = realloc(*elem->data, n * elem->data_size)) == NULL)
-    sc_ferr(1, "realloc() -> sc_realloc()");
+    return (sc_ierr(0, "realloc() -> sc_realloc()"));
   *elem->alloc = n;
   return (1);
  }

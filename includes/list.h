@@ -13,12 +13,12 @@ typedef struct sc_s_list
 
 sc_list_t* sc_lcreate(sc_autoalloc_func);
 
-void sc_ladd(sc_list_t*, void*);
+sc_list_t* sc_ladd(sc_list_t*, void*);
 
 void sc_ldestroy(sc_list_t*);
 
 ///Internal logic
 
-void _sc_lalloc(sc_list_t*, unsigned);
+int _sc_lalloc(sc_list_t*, unsigned);
 
 #endif

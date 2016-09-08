@@ -24,9 +24,6 @@ alnum
 eol                   end of line: '\r\n', '\r' or \'n'
 
 //TODO
-//List for save + 'getters'
-
-//TODO
 //Memory allocation / free to improve
 
 //TODO Implement HTTP

@@ -5,7 +5,7 @@ sc_list_t* sc_lcreate(sc_autoalloc_func alloc)
   sc_list_t* list;
 
   if ((list = malloc(sizeof(*list))) == NULL)
-    sc_ferr(1, "sc_lcreate() -> malloc()");
+    return (sc_perr("malloc() -> sc_lcreate()"));
   list->size = 0;
   list->_alloc = 0;
   list->content = NULL;
@@ -13,11 +13,13 @@ sc_list_t* sc_lcreate(sc_autoalloc_func alloc)
   return (list);
 }
 
-void sc_ladd(sc_list_t* list, void* val)
+sc_list_t* sc_ladd(sc_list_t* list, void* val)
 {
-  _sc_lalloc(list, 1);
+  if (!_sc_lalloc(list, 1))
+    return (NULL);
   list->content[list->size] = val;
   ++list->size;
+  return (list);
 }
 
 void sc_ldestroy(sc_list_t* list)
@@ -27,7 +29,7 @@ void sc_ldestroy(sc_list_t* list)
   free(list);
 }
 
-void _sc_lalloc(sc_list_t* list, unsigned size)
+int _sc_lalloc(sc_list_t* list, unsigned size)
 {
   struct sc_s_alloc alloc;
 
@@ -37,5 +39,5 @@ void _sc_lalloc(sc_list_t* list, unsigned size)
     .size = &list->size,
     .alloc = &list->_alloc
   };
-  list->_alloc_func(&alloc, list->size + size, 4);
+  return (list->_alloc_func(&alloc, list->size + size, 4));
 }

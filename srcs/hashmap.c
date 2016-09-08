@@ -5,9 +5,9 @@ sc_hashmp_t* sc_hcreate(uint32_t size, sc_hashfunc func, enum sc_e_key key)
   sc_hashmp_t* map;
 
   if ((map = malloc(sizeof(*map))) == NULL)
-    sc_ferr(1, "malloc() -> sc_hcreate()");
+    return (sc_perr("malloc() -> sc_hcreate()"));
   if ((map->buckets = calloc(size, sizeof(*map->buckets))) == NULL)
-    sc_ferr(1, "calloc() -> sc_hcreate()");
+    return (sc_perr("calloc() -> sc_hcreate()"));
   map->hash = func;
   map->type = key;
   map->size = size;
@@ -23,7 +23,10 @@ sc_hashmp_t* sc_hadd(sc_hashmp_t* map, const void* key, void* value)
   if ((r = _sc_hfind(&tmp, map->buckets[index], key, map->type)) == 0) //If found
     tmp->val = value;
   else
-    _sc_hadd(map, index, tmp, key, value);
+  {
+    if (_sc_hadd(map, index, tmp, key, value) == NULL)
+      return (NULL);
+  }
   return (map);
 }
 
@@ -93,7 +96,7 @@ struct sc_s_bcket* _sc_hadd(sc_hashmp_t* map, uint32_t index, struct sc_s_bcket*
   struct sc_s_bcket* bucket;
 
   if ((bucket = malloc(sizeof(*bucket))) == NULL)
-    sc_ferr(1, "malloc() -> _sc_hadd()");
+    return (sc_perr("malloc() -> _sc_hadd()"));
   bucket->key = key;
   bucket->val = value;
   bucket->next = NULL;

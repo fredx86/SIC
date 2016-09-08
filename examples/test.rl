@@ -1,1 +1,1 @@
-_main_ = +("a" | "b") num
+_main_ = *(word:n $) +"?"

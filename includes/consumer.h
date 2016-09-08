@@ -42,9 +42,9 @@ int sc_ctoeoi(sc_consumer_t*);
 
 int sc_ctkn(sc_consumer_t*, const char*, char);
 
-void sc_cstart(sc_consumer_t*, const char*);
-void sc_cendb(sc_consumer_t*, const char*, sc_bytes_t**);
-void sc_cends(sc_consumer_t*, const char*, char**);
+int sc_cstart(sc_consumer_t*, const char*);
+int sc_cendb(sc_consumer_t*, const char*, sc_bytes_t**);
+int sc_cends(sc_consumer_t*, const char*, char**);
 
 char* sc_cts(sc_consumer_t*);
 

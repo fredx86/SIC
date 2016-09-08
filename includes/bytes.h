@@ -28,7 +28,7 @@ void sc_bdestroy(sc_bytes_t*);
 
 ///Internal logic
 
-void _sc_balloc(sc_bytes_t*, unsigned);
+int _sc_balloc(sc_bytes_t*, unsigned);
 int _sc_bvalid(sc_bytes_t*, unsigned*, unsigned*);
 
 #endif

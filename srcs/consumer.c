@@ -5,7 +5,7 @@ sc_consumer_t* sc_ccreate(const char* str, unsigned size)
   sc_consumer_t* consumer;
 
   if ((consumer = malloc(sizeof(*consumer))) == NULL)
-    sc_ferr(1, "malloc() -> sc_ccreate()");
+    return (sc_perr("malloc() -> sc_ccreate()"));
   consumer->bytes = sc_bcreate(str, size, NULL);
   consumer->map = sc_hcreate(1024, &sc_jenkins_hash, SC_KY_STRING);
   consumer->_ptr = 0;
@@ -156,25 +156,26 @@ int sc_ctkn(sc_consumer_t* consumer, const char* tokens, char identical)
   return (0);
 }
 
-void sc_cstart(sc_consumer_t* consumer, const char* id)
+int sc_cstart(sc_consumer_t* consumer, const char* id)
 {
-  sc_hadd(consumer->map, (void*)id, (void*)consumer->_ptr);
+  return (sc_hadd(consumer->map, (void*)id, (void*)consumer->_ptr) != NULL);
 }
 
-void sc_cendb(sc_consumer_t* consumer, const char* id, sc_bytes_t** content)
+int sc_cendb(sc_consumer_t* consumer, const char* id, sc_bytes_t** content)
 {
   intptr_t n = (intptr_t)sc_hget(consumer->map, (void*)id);
-  *content = sc_bcreate(consumer->bytes->array + n, consumer->_ptr - n, NULL);
+  return ((*content = sc_bcreate(consumer->bytes->array + n, consumer->_ptr - n, NULL)) != NULL);
 }
 
-void sc_cends(sc_consumer_t* consumer, const char* id, char** content)
+int sc_cends(sc_consumer_t* consumer, const char* id, char** content)
 {
   intptr_t n = (intptr_t)sc_hget(consumer->map, (void*)id);
 
   if ((*content = malloc(consumer->_ptr - n + 1)) == NULL)
-    sc_ferr(1, "malloc() -> sc_cends()");
+    return (sc_ierr(0, "malloc() -> sc_cends()"));
   memcpy(*content, consumer->bytes->array + n, consumer->_ptr - n);
   (*content)[consumer->_ptr - n] = 0;
+  return (1);
 }
 
 char* sc_cts(sc_consumer_t* consumer)
@@ -183,7 +184,7 @@ char* sc_cts(sc_consumer_t* consumer)
   intptr_t i, j = 0;
 
   if ((str = malloc(consumer->bytes->size + 1)) == NULL) //TODO: Consider the 'real' size with _ptr
-    sc_ferr(1, "sc_cts() -> malloc()");
+    return (sc_perr("malloc() -> sc_cts()"));
   for (i = consumer->_ptr; i < consumer->bytes->size; ++i)
     str[j++] = consumer->bytes->array[i];
   str[j] = 0;

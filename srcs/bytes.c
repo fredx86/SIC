@@ -5,7 +5,7 @@ sc_bytes_t* sc_bcreate(const char* b, unsigned size, sc_autoalloc_func alloc)
   sc_bytes_t* bytes;
 
   if ((bytes = malloc(sizeof(*bytes))) == NULL)
-    sc_ferr(1, "malloc() -> sc_bcreate()");
+    return (sc_perr("malloc() -> sc_bcreate()"));
   bytes->array = NULL;
   bytes->size = 0;
   bytes->_alloc = 0;
@@ -15,7 +15,8 @@ sc_bytes_t* sc_bcreate(const char* b, unsigned size, sc_autoalloc_func alloc)
 
 sc_bytes_t* sc_bcpy(sc_bytes_t* bytes, const char* b, unsigned size)
 {
-  _sc_balloc(bytes, size);
+  if (!_sc_balloc(bytes, size))
+    return (NULL);
   memcpy(bytes->array, b, size);
   bytes->size = size;
   return (bytes);
@@ -23,7 +24,8 @@ sc_bytes_t* sc_bcpy(sc_bytes_t* bytes, const char* b, unsigned size)
 
 sc_bytes_t* sc_bapp(sc_bytes_t* bytes, const char* b, unsigned size)
 {
-  _sc_balloc(bytes, size);
+  if (!_sc_balloc(bytes, size))
+    return (NULL);
   memcpy(bytes->array + bytes->size, b, size);
   bytes->size += size;
   return (bytes);
@@ -36,7 +38,8 @@ sc_bytes_t* sc_bappb(sc_bytes_t* bytes, const sc_bytes_t* app)
 
 sc_bytes_t* sc_bappc(sc_bytes_t* bytes, char c)
 {
-  _sc_balloc(bytes, 1);
+  if (!_sc_balloc(bytes, 1))
+    return (NULL);
   bytes->array[bytes->size] = c;
   bytes->size += 1;
   return (bytes);
@@ -56,7 +59,7 @@ char* sc_bts(sc_bytes_t* bytes)
   char *str;
 
   if ((str = malloc(bytes->size + 1)) == NULL)
-    sc_ferr(1, "malloc() -> sc_bts()");
+    return ((char*)sc_perr("malloc() -> sc_bts()"));
   memcpy(str, bytes->array, bytes->size);
   str[bytes->size] = 0;
   return (str);
@@ -107,7 +110,7 @@ int _sc_bvalid(sc_bytes_t* bytes, unsigned* pos, unsigned* count)
   return (1);
 }
 
-void _sc_balloc(sc_bytes_t* bytes, unsigned size)
+int _sc_balloc(sc_bytes_t* bytes, unsigned size)
 {
   struct sc_s_alloc alloc;
 
@@ -117,5 +120,5 @@ void _sc_balloc(sc_bytes_t* bytes, unsigned size)
     .size = &bytes->size,
     .alloc = &bytes->_alloc
   };
-  bytes->_alloc_func(&alloc, bytes->size + size, 32);
+  return (bytes->_alloc_func(&alloc, bytes->size + size, 32));
 }

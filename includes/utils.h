@@ -18,7 +18,8 @@ struct sc_s_alloc
 typedef int (*sc_strcmp_func)(const char*, unsigned, const char*, unsigned, unsigned);
 typedef int (*sc_autoalloc_func)(struct sc_s_alloc*, unsigned, unsigned);
 
-void sc_ferr(int, const char*);
+int sc_ierr(int, const char*);
+void* sc_perr(const char*);
 
 int sc_strcmp(const char*, unsigned, const char*, unsigned, unsigned);
 int sc_ncstrcmp(const char*, unsigned, const char*, unsigned, unsigned);
