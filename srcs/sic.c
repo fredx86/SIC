@@ -20,6 +20,7 @@ static sc_rlint_t _int_rules[] = {
 
 sic_t* sc_init(sic_t* sic)
 {
+  sic->_err = 0;
   if (sc_hinit(&sic->rules[SC_RL_INTERNAL], 1024, &sc_jenkins_hash, SC_KY_STRING) == NULL ||
     sc_hinit(&sic->rules[SC_RL_STRING], 1024, &sc_jenkins_hash, SC_KY_STRING) == NULL ||
     sc_hinit(&sic->save, 1024, &sc_jenkins_hash, SC_KY_STRING) == NULL)
@@ -29,20 +30,24 @@ sic_t* sc_init(sic_t* sic)
 
 int sc_load_file(sic_t* sic, const char* filepath)
 {
+  char r;
   FILE* file;
   char buff[4096];
+  sc_consumer_t csmr;
 
-  if ((file = fopen(filepath, "r")) == NULL)
+  if ((file = fopen(filepath, "r")) == NULL ||
+    sc_cinit(&csmr, NULL, 0) == NULL)
     return (0);
   while (fgets(buff, 4096, file)) //TODO Replace w/ getline
-    _sc_line_to_rule(sic, buff); //TODO Warnings and such...
+  {
+    if ((r = _sc_line_to_rule(sic, &csmr, buff)) == 0 && sic->_err)
+      break;
+    else if (r == 0)
+      fprintf(stderr, "%s: %s\n\t@\'%s\'\n", SIC_STR_WARN, SIC_ERR_RULE_MISSING, buff);
+  }
   fclose(file);
-  return (1);
-}
-
-int sc_add_srule(sic_t* sic, const char* rule, const char* str)
-{
-  return (sc_hadd(&sic->rules[SC_RL_STRING], (void*)rule, (void*)str) != NULL);
+  sc_cdestroy(&csmr);
+  return (sic->_err ? 0 : 1);
 }
 
 int sc_parse(sic_t* sic, const char* str, unsigned size)
@@ -62,6 +67,12 @@ int sc_parse(sic_t* sic, const char* str, unsigned size)
   result = _sc_eval_expr(sic, entry) && SIC_CSMR_IS_EOI((&sic->input)); //Why do I need 2 parenthesis for this to compile ?!!
   sc_cdestroy(&sic->input);
   return (result);
+}
+
+void sc_destroy(sic_t* sic)
+{
+  (void)sic;
+  //TODO free sic->save key + content !
 }
 
 int _sc_setrl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
@@ -186,7 +197,7 @@ sic_t* _sc_set_intrl(sic_t* sic)
   {
     if (!sc_hadd(&sic->rules[SC_RL_INTERNAL], (void*)_int_rules[i].rule, &_int_rules[i]))
     {
-      //TODO sc_destroy(sic);
+      sc_destroy(sic);
       return (NULL);
     }
     if (_int_rules[i].symbol)
@@ -329,7 +340,7 @@ int _sc_internal_err(sic_t* sic, sc_consumer_t* csmr, const char* e, const char*
 {
   intptr_t i;
 
-  fprintf(stderr, (p ? "%s: %s \'%s\'\n\t" : "%s: %s\n\t"), SIC_INT_ERR, e, p);
+  fprintf(stderr, (p ? "%s: %s \'%s\'\n\t@" : "%s: %s\n\t@"), SIC_INT_ERR, e, p);
   fflush(stderr);
   sc_bprint(&csmr->bytes, stderr, 0);
   fputs("\n\t", stderr);
@@ -408,26 +419,33 @@ int _sc_eval_btwn(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint, const char
   return (result);
 }
 
-int _sc_line_to_rule(sic_t* sic, const char* line)
+int _sc_add_srule(sic_t* sic, const char* rule, const char* str)
+{
+  return (sc_hadd(&sic->rules[SC_RL_STRING], (void*)rule, (void*)str) != NULL);
+}
+
+int _sc_line_to_rule(sic_t* sic, sc_consumer_t* csmr, const char* line)
 {
   char* rulename;
   char* rulecntnt;
-  sc_consumer_t csmr;
 
-  if (sc_cinit(&csmr, line, strlen(line)) == NULL)
+  csmr->_ptr = 0;
+  if (sc_bcpy(&csmr->bytes, line, strlen(line)) == NULL)
+    return (_sc_fatal_err(sic));
+  sc_cmultiples(csmr, &sc_cwhitespace);
+  if (SIC_CSMR_IS_EOI(csmr)) //Empty line, don't care
+    return (1);
+  if (!sc_cstart(csmr, "name"))
+    return (_sc_fatal_err(sic));
+  if (!sc_cidentifier(csmr))
     return (0);
-  sc_cmultiples(&csmr, &sc_cwhitespace);
-  sc_cstart(&csmr, "name");
-  if (!sc_cidentifier(&csmr))
+  if (!sc_cends(csmr, "name", &rulename))
+    return (_sc_fatal_err(sic));
+  sc_cmultiples(csmr, &sc_cwhitespace);
+  if (!sc_cchar(csmr, '='))
     return (0);
-  sc_cends(&csmr, "name", &rulename);
-  sc_cmultiples(&csmr, &sc_cwhitespace);
-  if (!sc_cchar(&csmr, '='))
-    return (0);
-  sc_cstart(&csmr, "content");
-  sc_ctoeoi(&csmr);
-  sc_cends(&csmr, "content", &rulecntnt);
-  sc_add_srule(sic, rulename, rulecntnt);
-  sc_cdestroy(&csmr);
-  return (1);
+  if (!sc_cstart(csmr, "content") || !sc_ctoeoi(csmr) ||
+    !sc_cends(csmr, "content", &rulecntnt))
+    return (_sc_fatal_err(sic));
+  return (_sc_add_srule(sic, rulename, rulecntnt));
 }

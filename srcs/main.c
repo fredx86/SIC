@@ -34,5 +34,6 @@ int main()
     fputc('\"', stdout);
     fputc(10, stdout);
   }
+  sc_destroy(&sic);
   return (0);
 }

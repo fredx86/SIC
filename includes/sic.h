@@ -6,6 +6,7 @@
 
 #define SIC_ENTRY               "_main_"
 #define SIC_INT_ERR             "SIC Internal Error"
+#define SIC_STR_WARN            "SIC Warning"
 #define SIC_ERR_RULE_MISSING    "Expected rule"
 #define SIC_ERR_SAVE_MISSING    "Expected save identifier"
 #define SIC_ERR_RULE_NOT_FOUND  "Rule not found"
@@ -52,12 +53,10 @@ typedef struct sc_s_rl
 
 sic_t* sc_init(sic_t*);
 int sc_load_file(sic_t*, const char*);
-int sc_add_srule(sic_t*, const char*, const char*);
 
 int sc_parse(sic_t*, const char*, unsigned);
 
-//void sc_destroy(sic_t*);
-// -> free save = *VALUES + KEYS*
+void sc_destroy(sic_t*);
 
 ///Internal logic
 
@@ -97,6 +96,7 @@ int _sc_internal_err(sic_t*, sc_consumer_t*, const char*, const char*);
 int _sc_tkn_cntnt(sic_t*, sc_consumer_t*, sc_rlint_t*, const char*, char, char**);
 int _sc_rl_multiple(sic_t*, sc_consumer_t*, sc_rlint_t*, unsigned);
 int _sc_eval_btwn(sic_t*, sc_consumer_t*, sc_rlint_t*, const char*, char);
-int _sc_line_to_rule(sic_t*, const char*);
+int _sc_add_srule(sic_t*, const char*, const char*);
+int _sc_line_to_rule(sic_t*, sc_consumer_t*, const char*);
 
 #endif
