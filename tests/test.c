@@ -1,6 +1,28 @@
 #include <assert.h>
 #include "sic/sic.h"
 
+void bytes()
+{
+  sc_bytes_t bytes;
+  assert(sc_binit(&bytes, NULL, 0, NULL) != NULL);
+  assert(bytes.size == 0);
+  assert(sc_bcpy(&bytes, "hello", 5) != NULL);
+  assert(bytes.size == 5);
+  assert(sc_bapp(&bytes, " world", 6) != NULL);
+  assert(bytes.size == 11);
+  assert(sc_bappc(&bytes, 0) != NULL);
+  assert(strcmp(bytes.array, "hello world") == 0);
+
+  assert(sc_berase(&bytes, 0, 1) != NULL);
+  assert(strcmp(bytes.array, "ello world") == 0);
+  assert(sc_berase(&bytes, 42, 1) != NULL); //Can't erase outside of byte array
+  assert(strcmp(bytes.array, "ello world") == 0);
+  assert(sc_berase(&bytes, 9, 1) != NULL);
+  assert(strcmp(bytes.array, "ello worl") == 0);
+  assert(sc_berase(&bytes, 0, 100) != NULL); //Erase as there is content
+  assert(bytes.size == 0);
+}
+
 void hashmap()
 {
   //Default behaviour w/ string
