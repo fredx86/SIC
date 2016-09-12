@@ -1,4 +1,4 @@
-#include "sic.h"
+#include "sic/sic.h"
 
 static sc_rlint_t _int_rules[] = {
   { "\"",       "STRING",           &_sc_string,        1 },

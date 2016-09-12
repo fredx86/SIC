@@ -1,8 +1,8 @@
 #ifndef SIC_H_
 #define SIC_H_
 
-#include "list.h"
-#include "consumer.h"
+#include "sic/list.h"
+#include "sic/consumer.h"
 
 #define SIC_ENTRY               "_main_"
 #define SIC_INT_ERR             "SIC Internal Error"

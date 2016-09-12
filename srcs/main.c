@@ -1,17 +1,5 @@
 #include <stdio.h>
-#include <assert.h>
-#include "sic.h"
-
-void assert_hashmap()
-{
-  sc_hashmp_t map;
-
-  assert(sc_hinit(&map, 1024, &sc_jenkins_hash, SC_KY_STRING) != NULL);
-  assert(sc_hget(&map, "42") == NULL);
-  assert(sc_hadd(&map, "42", "HELLO") != NULL);
-  assert(sc_hget(&map, "42") != NULL);
-  assert(sc_hget(&map, "423") != NULL);
-}
+#include "sic/sic.h"
 
 int main()
 {

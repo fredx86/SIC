@@ -1,7 +1,7 @@
 #ifndef SIC_LIST_H_
 #define SIC_LIST_H_
 
-#include "utils.h"
+#include "sic/utils.h"
 
 typedef struct sc_s_list
 {

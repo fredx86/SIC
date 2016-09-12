@@ -1,4 +1,4 @@
-#include "consumer.h"
+#include "sic/consumer.h"
 
 sc_consumer_t* sc_cinit(sc_consumer_t* consumer, const char* str, unsigned size)
 {

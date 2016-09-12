@@ -1,4 +1,4 @@
-#include "hashmap.h"
+#include "sic/hashmap.h"
 
 sc_hashmp_t* sc_hinit(sc_hashmp_t* map, uint32_t size, sc_hashfunc func, enum sc_e_key key)
 {

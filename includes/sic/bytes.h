@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "utils.h"
+#include "sic/utils.h"
 
 typedef struct sc_s_bytes
 {

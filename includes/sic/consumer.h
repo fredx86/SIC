@@ -2,9 +2,9 @@
 #define SIC_CONSUMER_H_
 
 #include <ctype.h>
-#include "bytes.h"
-#include "hashmap.h"
-#include "utils.h"
+#include "sic/bytes.h"
+#include "sic/hashmap.h"
+#include "sic/utils.h"
 
 typedef struct sc_s_consumer
 {

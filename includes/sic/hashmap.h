@@ -2,7 +2,7 @@
 #define SIC_HASHMAP_H_
 
 #include <stdint.h>
-#include "utils.h"
+#include "sic/utils.h"
 
 enum sc_e_key
 {

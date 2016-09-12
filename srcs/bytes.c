@@ -1,4 +1,4 @@
-#include "bytes.h"
+#include "sic/bytes.h"
 
 sc_bytes_t* sc_binit(sc_bytes_t* bytes, const char* b, unsigned size, sc_autoalloc_func alloc)
 {

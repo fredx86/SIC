@@ -1,4 +1,4 @@
-#include "utils.h"
+#include "sic/utils.h"
 
 int sc_ierr(int r, const char* e)
 {
