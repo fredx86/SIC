@@ -233,7 +233,7 @@ int _sc_ncstring(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 int _sc_optional(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 {
   _sc_eval_btwn(sic, csmr, rlint, "[]", 0);
-  return (SC_RETVAL(sic, 1));
+  return (SIC_RETVAL(sic, 1));
 }
 
 int _sc_priority(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
@@ -246,7 +246,7 @@ int _sc_whitespaces(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
   (void)rlint;
   (void)csmr;
   while (sc_cwhitespace(&sic->input));
-  return (SC_RETVAL(sic, 1));
+  return (SIC_RETVAL(sic, 1));
 }
 
 int _sc_digit(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
@@ -404,7 +404,7 @@ int _sc_rl_multiple(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint, unsigned
   while (_sc_eval_rl(sic, csmr, &rule))
     csmr->_ptr = save;
   free(rule.name);
-  return (1);
+  return (SIC_RETVAL(sic, 1));
 }
 
 int _sc_eval_btwn(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint, const char* tokens, char identical)
@@ -429,8 +429,7 @@ int _sc_line_to_rule(sic_t* sic, sc_consumer_t* csmr, const char* line)
   char* rulename;
   char* rulecntnt;
 
-  csmr->_ptr = 0;
-  if (sc_bcpy(&csmr->bytes, line, strlen(line)) == NULL)
+  if (sc_cset(csmr, line, strlen(line)) == NULL)
     return (_sc_fatal_err(sic));
   sc_cmultiples(csmr, &sc_cwhitespace);
   if (SIC_CSMR_IS_EOI(csmr)) //Empty line, don't care

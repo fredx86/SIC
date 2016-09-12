@@ -53,7 +53,7 @@ void hashmap()
 
 int main()
 {
-  //bytes();
+  bytes();
   hashmap();
   //consumer();
   //sic();

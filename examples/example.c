@@ -17,6 +17,7 @@ int main(int ac, char **av)
     fprintf(stderr, "%s: Cannot load file \"%s\"\n", av[0], av[1]);
     return (1);
   }
+  printf("Parsing \"%s\"...\n", av[2]);
   printf("%s\n", sc_parse(&sic, av[2], strlen(av[2])) ? "OK" : "KO");
   sc_destroy(&sic);
   return (0);

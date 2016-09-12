@@ -10,6 +10,14 @@ sc_consumer_t* sc_cinit(sc_consumer_t* consumer, const char* str, unsigned size)
   return (consumer);
 }
 
+sc_consumer_t* sc_cset(sc_consumer_t* consumer, const char* str, unsigned size)
+{
+  if (sc_bcpy(&consumer->bytes, str, size) == NULL)
+    return (NULL);
+  consumer->_ptr = 0;
+  return (consumer);
+}
+
 int sc_cread(sc_consumer_t* consumer, char* c)
 {
   if (SIC_CSMR_IS_EOI(consumer))

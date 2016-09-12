@@ -12,9 +12,9 @@
 #define SIC_ERR_RULE_NOT_FOUND  "Rule not found"
 #define SIC_ERR_RULE_ERRONEOUS  "Rule is erroneous"
 
-#define SC_RL_SYM_SIZE          15
+#define SIC_SYM_SIZE            15
 
-#define SC_RETVAL(sic, x)       (sic->_err ? 0 : x)
+#define SIC_RETVAL(sic, x)      (sic->_err ? 0 : x)
 
 typedef enum sc_e_rules
 {
@@ -28,7 +28,7 @@ typedef struct s_sic
   sc_consumer_t input;
   sc_hashmp_t rules[SC_RL_COUNT];
   sc_hashmp_t save;
-  char _symbols[SC_RL_SYM_SIZE];
+  char _symbols[SIC_SYM_SIZE];
   char _err;
 } sic_t;
 
