@@ -71,8 +71,12 @@ int sc_parse(sic_t* sic, const char* str, unsigned size)
 
 void sc_destroy(sic_t* sic)
 {
-  (void)sic;
+  unsigned i;
+
+  for (i = 0; i < SC_RL_COUNT; ++i)
+    sc_hdestroy(&sic->rules[i]);
   //TODO free sic->save key + content !
+  sc_hdestroy(&sic->save);
 }
 
 int _sc_setrl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
