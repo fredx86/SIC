@@ -8,20 +8,20 @@
 
 typedef struct sc_s_consumer
 {
-  sc_bytes_t* bytes;
-  sc_hashmp_t* map;
+  sc_bytes_t bytes;
+  sc_hashmp_t map;
   intptr_t _ptr;
 } sc_consumer_t;
 
 typedef int (*sc_csmrfunc)(sc_consumer_t*);
 
-#define SIC_CSMR_CHAR(consumer)      (consumer->bytes->array[consumer->_ptr])
-#define SIC_CSMR_STR(consumer)       (consumer->bytes->array + consumer->_ptr)
+#define SIC_CSMR_CHAR(consumer)      (consumer->bytes.array[consumer->_ptr])
+#define SIC_CSMR_STR(consumer)       (consumer->bytes.array + consumer->_ptr)
 #define SIC_CSMR_READ(consumer, c)   (SIC_CSMR_IS_EOI(consumer) ? 0 : (*c = SIC_CSMR_CHAR(consumer)) ? 1 : 1)
-#define SIC_CSMR_IS_EOI(consumer)    (consumer->_ptr >= consumer->bytes->size)
+#define SIC_CSMR_IS_EOI(consumer)    (consumer->_ptr >= consumer->bytes.size)
 #define SIC_CSMR_INCR(consumer, n)   (n == 1 ? ++consumer->_ptr : _sc_cincr(consumer, n))
 
-sc_consumer_t* sc_ccreate(const char*, unsigned);
+sc_consumer_t* sc_cinit(sc_consumer_t*, const char*, unsigned);
 
 int sc_cread(sc_consumer_t*, char*);
 int sc_cchar(sc_consumer_t*, char);
@@ -43,7 +43,7 @@ int sc_ctoeoi(sc_consumer_t*);
 int sc_ctkn(sc_consumer_t*, const char*, char);
 
 int sc_cstart(sc_consumer_t*, const char*);
-int sc_cendb(sc_consumer_t*, const char*, sc_bytes_t**);
+int sc_cendb(sc_consumer_t*, const char*, sc_bytes_t*);
 int sc_cends(sc_consumer_t*, const char*, char**);
 
 char* sc_cts(sc_consumer_t*);

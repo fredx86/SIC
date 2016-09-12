@@ -18,15 +18,12 @@ static sc_rlint_t _int_rules[] = {
   { NULL, NULL, NULL, 0 }
 };
 
-sic_t* sc_create()
+sic_t* sc_init(sic_t* sic)
 {
-  sic_t* sic;
-
-  if ((sic = malloc(sizeof(*sic))) == NULL)
-    return (sc_perr("malloc() -> sc_create()"));
-  sic->rules[SC_RL_INTERNAL] = sc_hcreate(1024, &sc_jenkins_hash, SC_KY_STRING);
-  sic->rules[SC_RL_STRING] = sc_hcreate(1024, &sc_jenkins_hash, SC_KY_STRING);
-  sic->save = sc_hcreate(1024, &sc_jenkins_hash, SC_KY_STRING);
+  if (sc_hinit(&sic->rules[SC_RL_INTERNAL], 1024, &sc_jenkins_hash, SC_KY_STRING) == NULL ||
+    sc_hinit(&sic->rules[SC_RL_STRING], 1024, &sc_jenkins_hash, SC_KY_STRING) == NULL ||
+    sc_hinit(&sic->save, 1024, &sc_jenkins_hash, SC_KY_STRING) == NULL)
+    return (NULL);
   return (_sc_set_intrl(sic));
 }
 
@@ -45,7 +42,7 @@ int sc_load_file(sic_t* sic, const char* filepath)
 
 int sc_add_srule(sic_t* sic, const char* rule, const char* str)
 {
-  return (sc_hadd(sic->rules[SC_RL_STRING], (void*)rule, (void*)str) != NULL);
+  return (sc_hadd(&sic->rules[SC_RL_STRING], (void*)rule, (void*)str) != NULL);
 }
 
 int sc_parse(sic_t* sic, const char* str, unsigned size)
@@ -54,16 +51,16 @@ int sc_parse(sic_t* sic, const char* str, unsigned size)
   char* entry;
 
   sic->_err = 0;
-  if ((entry = sc_hget(sic->rules[SC_RL_STRING], SIC_ENTRY)) == NULL)
+  if ((entry = sc_hget(&sic->rules[SC_RL_STRING], SIC_ENTRY)) == NULL)
   {
     fprintf(stderr, "%s: No entry point @%s\n", SIC_INT_ERR, SIC_ENTRY);
     return (0);
   }
   //TODO clear content of save !!!
-  if ((sic->input = sc_ccreate(str, size)) == NULL)
+  if (sc_cinit(&sic->input, str, size) == NULL)
     return (0);
-  result = _sc_eval_expr(sic, entry) && SIC_CSMR_IS_EOI(sic->input);
-  sc_cdestroy(sic->input);
+  result = _sc_eval_expr(sic, entry) && SIC_CSMR_IS_EOI((&sic->input)); //Why do I need 2 parenthesis for this to compile ?!!
+  sc_cdestroy(&sic->input);
   return (result);
 }
 
@@ -100,11 +97,14 @@ int _sc_eval_rl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
   sc_bytes_t* saved;
   sc_rlfunc funcs[] = { &_sc_eval_intrl, &_sc_eval_strrl };
 
-  if (rule->save && !sc_cstart(sic->input, "save"))
-    return (_sc_fatal_err(sic));
+  if (rule->save)
+  {
+    if (!sc_cstart(&sic->input, "save") || (saved = sc_bcreate(NULL, 0, NULL)) == NULL)
+      return (_sc_fatal_err(sic));
+  }
   for (i = 0; i < SC_RL_COUNT; ++i)
   {
-    if (sc_hhas(sic->rules[i], rule->name))
+    if (sc_hhas(&sic->rules[i], rule->name))
     {
       result = funcs[i](sic, csmr, rule);
       break;
@@ -114,7 +114,7 @@ int _sc_eval_rl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
     return (_sc_internal_err(sic, csmr, SIC_ERR_RULE_NOT_FOUND, rule->name));
   if (rule->save)
   {
-    if (!sc_cendb(sic->input, "save", &saved) || !_sc_save(sic, rule->save, saved))
+    if (!sc_cendb(&sic->input, "save", saved) || !_sc_save(sic, rule->save, saved))
       return (_sc_fatal_err(sic));
   }
   return (result);
@@ -122,7 +122,7 @@ int _sc_eval_rl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
 
 int _sc_eval_intrl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
 {
-  sc_rlint_t* int_rule = (sc_rlint_t*)sc_hget(sic->rules[SC_RL_INTERNAL], rule->name);
+  sc_rlint_t* int_rule = (sc_rlint_t*)sc_hget(&sic->rules[SC_RL_INTERNAL], rule->name);
 
   if (int_rule == NULL)
     return (0);
@@ -134,7 +134,7 @@ int _sc_eval_strrl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
   char* str;
 
   (void)csmr;
-  if ((str = (char*)sc_hget(sic->rules[SC_RL_STRING], rule->name)) == NULL)
+  if ((str = (char*)sc_hget(&sic->rules[SC_RL_STRING], rule->name)) == NULL)
     return (_sc_internal_err(sic, csmr, SIC_ERR_RULE_NOT_FOUND, rule->name));
   return (_sc_eval_expr(sic, str));
 }
@@ -144,7 +144,7 @@ int _sc_eval_csmr_expr(sic_t* sic, sc_consumer_t* csmr)
   char c;
   sc_rl_t rule;
   char result = 1;
-  intptr_t save = sic->input->_ptr;
+  intptr_t save = sic->input._ptr;
 
   while (SIC_CSMR_READ(csmr, &c) && c != '|' && !sic->_err)
   {
@@ -155,7 +155,7 @@ int _sc_eval_csmr_expr(sic_t* sic, sc_consumer_t* csmr)
     sc_cmultiples(csmr, &sc_cwhitespace);
     free(rule.name);
   }
-  sic->input->_ptr = (!result ? save : sic->input->_ptr);
+  sic->input._ptr = (!result ? save : sic->input._ptr);
   if (!result && c == '|' && !sic->_err)
   {
     ++csmr->_ptr;
@@ -167,12 +167,12 @@ int _sc_eval_csmr_expr(sic_t* sic, sc_consumer_t* csmr)
 int _sc_eval_expr(sic_t* sic, const char* expr)
 {
   int result;
-  sc_consumer_t* csmr;
+  sc_consumer_t csmr;
 
-  if ((csmr = sc_ccreate(expr, strlen(expr))) == NULL)
+  if (sc_cinit(&csmr, expr, strlen(expr)) == NULL)
     return (_sc_fatal_err(sic));
-  result = _sc_eval_csmr_expr(sic, csmr);
-  sc_cdestroy(csmr);
+  result = _sc_eval_csmr_expr(sic, &csmr);
+  sc_cdestroy(&csmr);
   return (result);
 }
 
@@ -184,7 +184,7 @@ sic_t* _sc_set_intrl(sic_t* sic)
   sic->_symbols[0] = 0;
   for (i = 0; _int_rules[i].rule; ++i)
   {
-    if (!sc_hadd(sic->rules[SC_RL_INTERNAL], (void*)_int_rules[i].rule, &_int_rules[i]))
+    if (!sc_hadd(&sic->rules[SC_RL_INTERNAL], (void*)_int_rules[i].rule, &_int_rules[i]))
     {
       //TODO sc_destroy(sic);
       return (NULL);
@@ -202,7 +202,7 @@ int _sc_string(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 
   if (!_sc_tkn_cntnt(sic, csmr, rlint, "\"\"", 1, &str))
     return (0);
-  has_read = sc_ctxt(sic->input, str, 0);
+  has_read = sc_ctxt(&sic->input, str, 0);
   free(str);
   return (has_read);
 }
@@ -214,7 +214,7 @@ int _sc_ncstring(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 
   if (!_sc_tkn_cntnt(sic, csmr, rlint, "``", 1, &str))
     return (0);
-  has_read = sc_ctxt(sic->input, str, 1);
+  has_read = sc_ctxt(&sic->input, str, 1);
   free(str);
   return (has_read);
 }
@@ -234,7 +234,7 @@ int _sc_whitespaces(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 {
   (void)rlint;
   (void)csmr;
-  while (sc_cwhitespace(sic->input));
+  while (sc_cwhitespace(&sic->input));
   return (SC_RETVAL(sic, 1));
 }
 
@@ -242,42 +242,42 @@ int _sc_digit(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 {
   (void)csmr;
   (void)rlint;
-  return (sc_cdigit(sic->input));
+  return (sc_cdigit(&sic->input));
 }
 
 int _sc_num(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 {
   (void)csmr;
   (void)rlint;
-  return (sc_cmultiples(sic->input, &sc_cdigit));
+  return (sc_cmultiples(&sic->input, &sc_cdigit));
 }
 
 int _sc_alpha(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 {
   (void)csmr;
   (void)rlint;
-  return (sc_calpha(sic->input));
+  return (sc_calpha(&sic->input));
 }
 
 int _sc_word(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 {
   (void)csmr;
   (void)rlint;
-  return (sc_cmultiples(sic->input, &sc_calpha));
+  return (sc_cmultiples(&sic->input, &sc_calpha));
 }
 
 int _sc_alnum(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 {
   (void)csmr;
   (void)rlint;
-  return (sc_calphanum(sic->input));
+  return (sc_calphanum(&sic->input));
 }
 
 int _sc_eol(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 {
   (void)csmr;
   (void)rlint;
-  return (sc_csome(sic->input, "\r\n"));
+  return (sc_csome(&sic->input, "\r\n"));
 }
 
 int _sc_opt_multiple(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
@@ -301,7 +301,7 @@ int _sc_byte(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
     return (_sc_internal_err(sic, csmr, SIC_ERR_RULE_ERRONEOUS, rlint->name));
   if (!sc_cends(csmr, "byte", &bytes))
     return (_sc_fatal_err(sic));
-  has_read = sc_cchar(sic->input, atoi(bytes));
+  has_read = sc_cchar(&sic->input, atoi(bytes));
   free(bytes);
   return (has_read);
 }
@@ -311,10 +311,10 @@ int _sc_save(sic_t* sic, const char* key, sc_bytes_t* save)
   void* tmp;
   sc_list_t* list;
 
-  if ((tmp = sc_hget(sic->save, (const void*)key)) == NULL)
+  if ((tmp = sc_hget(&sic->save, (const void*)key)) == NULL)
   {
     if ((list = sc_lcreate(NULL)) == NULL ||
-      !sc_hadd(sic->save, (const void*)key, list))
+      !sc_hadd(&sic->save, (const void*)key, list))
       return (0);
   }
   else
@@ -331,7 +331,7 @@ int _sc_internal_err(sic_t* sic, sc_consumer_t* csmr, const char* e, const char*
 
   fprintf(stderr, (p ? "%s: %s \'%s\'\n\t" : "%s: %s\n\t"), SIC_INT_ERR, e, p);
   fflush(stderr);
-  sc_bprint(csmr->bytes, stderr, 0);
+  sc_bprint(&csmr->bytes, stderr, 0);
   fputs("\n\t", stderr);
   for (i = 0; i < csmr->_ptr; ++i)
     fputc(' ', stderr);
@@ -352,22 +352,23 @@ int _sc_fatal_err(sic_t* sic)
 //    Set 'str' as the content between tokens -> hello world
 int _sc_tkn_cntnt(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint, const char* tokens, char identical, char** str)
 {
-  sc_bytes_t* cntnt;
+  sc_bytes_t cntnt;
   unsigned len = strlen(rlint->rule);
 
   csmr->_ptr -= len;
+  if (sc_binit(&cntnt, NULL, 0, NULL) == NULL)
+    return (_sc_fatal_err(sic));
   if (!sc_cstart(csmr, "token"))
     return (_sc_fatal_err(sic));
   if (!sc_ctkn(csmr, tokens, identical))
     return (_sc_internal_err(sic, csmr, SIC_ERR_RULE_ERRONEOUS, rlint->name));
   if (!sc_cendb(csmr, "token", &cntnt))
     return (_sc_fatal_err(sic));
-  sc_berase(cntnt, 0, 1);
-  sc_berase(cntnt, cntnt->size - 1, 1);
-  if (!sc_bappc(cntnt, 0))
+  sc_berase(&cntnt, 0, 1);
+  sc_berase(&cntnt, cntnt.size - 1, 1);
+  if (!sc_bappc(&cntnt, 0))
     return (_sc_fatal_err(sic));
-  *str = cntnt->array;
-  free(cntnt);
+  *str = cntnt.array;
   return (1);
 }
 
@@ -407,26 +408,26 @@ int _sc_eval_btwn(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint, const char
   return (result);
 }
 
-//TODO sc_cinit -> give sc_consumer_t* in param
 int _sc_line_to_rule(sic_t* sic, const char* line)
 {
   char* rulename;
   char* rulecntnt;
-  sc_consumer_t* csmr;
+  sc_consumer_t csmr;
 
-  csmr = sc_ccreate(line, strlen(line));
-  sc_cmultiples(csmr, &sc_cwhitespace);
-  sc_cstart(csmr, "name");
-  if (!sc_cidentifier(csmr))
+  if (sc_cinit(&csmr, line, strlen(line)) == NULL)
     return (0);
-  sc_cends(csmr, "name", &rulename);
-  sc_cmultiples(csmr, &sc_cwhitespace);
-  if (!sc_cchar(csmr, '='))
+  sc_cmultiples(&csmr, &sc_cwhitespace);
+  sc_cstart(&csmr, "name");
+  if (!sc_cidentifier(&csmr))
     return (0);
-  sc_cstart(csmr, "content");
-  sc_ctoeoi(csmr);
-  sc_cends(csmr, "content", &rulecntnt);
+  sc_cends(&csmr, "name", &rulename);
+  sc_cmultiples(&csmr, &sc_cwhitespace);
+  if (!sc_cchar(&csmr, '='))
+    return (0);
+  sc_cstart(&csmr, "content");
+  sc_ctoeoi(&csmr);
+  sc_cends(&csmr, "content", &rulecntnt);
   sc_add_srule(sic, rulename, rulecntnt);
-  sc_cdestroy(csmr);
+  sc_cdestroy(&csmr);
   return (1);
 }

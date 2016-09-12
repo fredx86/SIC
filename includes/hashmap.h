@@ -29,7 +29,7 @@ typedef struct s_sc_hashmap
   struct sc_s_bcket **buckets;
 } sc_hashmp_t;
 
-sc_hashmp_t* sc_hcreate(uint32_t, sc_hashfunc, enum sc_e_key);
+sc_hashmp_t* sc_hinit(sc_hashmp_t*, uint32_t, sc_hashfunc, enum sc_e_key);
 sc_hashmp_t* sc_hadd(sc_hashmp_t*, const void*, void*);
 int sc_hhas(sc_hashmp_t*, const void*);
 void* sc_hget(sc_hashmp_t*, const void*);

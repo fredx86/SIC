@@ -1,16 +1,21 @@
 #include "bytes.h"
 
+sc_bytes_t* sc_binit(sc_bytes_t* bytes, const char* b, unsigned size, sc_autoalloc_func alloc)
+{
+  bytes->array = NULL;
+  bytes->size = 0;
+  bytes->_alloc = 0;
+  bytes->_alloc_func = (alloc == NULL ? sc_realloc : alloc);
+  return (sc_bcpy(bytes, b, size));
+}
+
 sc_bytes_t* sc_bcreate(const char* b, unsigned size, sc_autoalloc_func alloc)
 {
   sc_bytes_t* bytes;
 
   if ((bytes = malloc(sizeof(*bytes))) == NULL)
     return (sc_perr("malloc() -> sc_bcreate()"));
-  bytes->array = NULL;
-  bytes->size = 0;
-  bytes->_alloc = 0;
-  bytes->_alloc_func = (alloc == NULL ? sc_realloc : alloc);
-  return (sc_bcpy(bytes, b, size));
+  return (sc_binit(bytes, b, size, alloc));
 }
 
 sc_bytes_t* sc_bcpy(sc_bytes_t* bytes, const char* b, unsigned size)
@@ -93,7 +98,6 @@ void sc_bdestroy(sc_bytes_t* bytes)
 {
   if (bytes->array)
     free(bytes->array);
-  free(bytes);
 }
 
 int _sc_bvalid(sc_bytes_t* bytes, unsigned* pos, unsigned* count)

@@ -1,13 +1,11 @@
 #include "consumer.h"
 
-sc_consumer_t* sc_ccreate(const char* str, unsigned size)
+sc_consumer_t* sc_cinit(sc_consumer_t* consumer, const char* str, unsigned size)
 {
-  sc_consumer_t* consumer;
-
-  if ((consumer = malloc(sizeof(*consumer))) == NULL)
-    return (sc_perr("malloc() -> sc_ccreate()"));
-  consumer->bytes = sc_bcreate(str, size, NULL);
-  consumer->map = sc_hcreate(1024, &sc_jenkins_hash, SC_KY_STRING);
+  if ((sc_binit(&consumer->bytes, str, size, NULL)) == NULL)
+    return (NULL);
+  if ((sc_hinit(&consumer->map, 1024, &sc_jenkins_hash, SC_KY_STRING)) == NULL)
+    return (NULL);
   consumer->_ptr = 0;
   return (consumer);
 }
@@ -74,7 +72,7 @@ int sc_ctxt(sc_consumer_t* consumer, const char* text, int nocase)
   unsigned size = strlen(text);
   sc_strcmp_func cmp[] = { &sc_strcmp, &sc_ncstrcmp };
   
-  if (cmp[nocase ? 1 : 0](SIC_CSMR_STR(consumer), consumer->bytes->size, text, size, size))
+  if (cmp[nocase ? 1 : 0](SIC_CSMR_STR(consumer), consumer->bytes.size, text, size, size))
     return (SIC_CSMR_INCR(consumer, size));
   return (0);
 }
@@ -127,7 +125,7 @@ int sc_cmultiples(sc_consumer_t* consumer, sc_csmrfunc func)
 
 int sc_ctoeoi(sc_consumer_t* consumer)
 {
-  consumer->_ptr = consumer->bytes->size;
+  consumer->_ptr = consumer->bytes.size;
   return (1);
 }
 
@@ -158,22 +156,22 @@ int sc_ctkn(sc_consumer_t* consumer, const char* tokens, char identical)
 
 int sc_cstart(sc_consumer_t* consumer, const char* id)
 {
-  return (sc_hadd(consumer->map, (void*)id, (void*)consumer->_ptr) != NULL);
+  return (sc_hadd(&consumer->map, (void*)id, (void*)consumer->_ptr) != NULL);
 }
 
-int sc_cendb(sc_consumer_t* consumer, const char* id, sc_bytes_t** content)
+int sc_cendb(sc_consumer_t* consumer, const char* id, sc_bytes_t* content)
 {
-  intptr_t n = (intptr_t)sc_hget(consumer->map, (void*)id);
-  return ((*content = sc_bcreate(consumer->bytes->array + n, consumer->_ptr - n, NULL)) != NULL);
+  intptr_t n = (intptr_t)sc_hget(&consumer->map, (void*)id);
+  return (sc_binit(content, consumer->bytes.array + n, consumer->_ptr - n, NULL) != NULL);
 }
 
 int sc_cends(sc_consumer_t* consumer, const char* id, char** content)
 {
-  intptr_t n = (intptr_t)sc_hget(consumer->map, (void*)id);
+  intptr_t n = (intptr_t)sc_hget(&consumer->map, (void*)id);
 
   if ((*content = malloc(consumer->_ptr - n + 1)) == NULL)
     return (sc_ierr(0, "malloc() -> sc_cends()"));
-  memcpy(*content, consumer->bytes->array + n, consumer->_ptr - n);
+  memcpy(*content, consumer->bytes.array + n, consumer->_ptr - n);
   (*content)[consumer->_ptr - n] = 0;
   return (1);
 }
@@ -183,18 +181,18 @@ char* sc_cts(sc_consumer_t* consumer)
   char* str;
   intptr_t i, j = 0;
 
-  if ((str = malloc(consumer->bytes->size + 1)) == NULL) //TODO: Consider the 'real' size with _ptr
+  if ((str = malloc(consumer->bytes.size + 1)) == NULL) //TODO: Consider the 'real' size with _ptr
     return (sc_perr("malloc() -> sc_cts()"));
-  for (i = consumer->_ptr; i < consumer->bytes->size; ++i)
-    str[j++] = consumer->bytes->array[i];
+  for (i = consumer->_ptr; i < consumer->bytes.size; ++i)
+    str[j++] = consumer->bytes.array[i];
   str[j] = 0;
   return (str);
 }
 
 void sc_cdestroy(sc_consumer_t* consumer)
 {
-  sc_hdestroy(consumer->map);
-  sc_bdestroy(consumer->bytes);
+  sc_hdestroy(&consumer->map);
+  sc_bdestroy(&consumer->bytes);
 }
 
 int _sc_cincr(sc_consumer_t* consumer, unsigned n)

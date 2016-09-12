@@ -1,11 +1,7 @@
 #include "hashmap.h"
 
-sc_hashmp_t* sc_hcreate(uint32_t size, sc_hashfunc func, enum sc_e_key key)
+sc_hashmp_t* sc_hinit(sc_hashmp_t* map, uint32_t size, sc_hashfunc func, enum sc_e_key key)
 {
-  sc_hashmp_t* map;
-
-  if ((map = malloc(sizeof(*map))) == NULL)
-    return (sc_perr("malloc() -> sc_hcreate()"));
   if ((map->buckets = calloc(size, sizeof(*map->buckets))) == NULL)
     return (sc_perr("calloc() -> sc_hcreate()"));
   map->hash = func;
@@ -65,7 +61,6 @@ void sc_hdestroy(sc_hashmp_t* map)
     ++i;
   }
   free(map->buckets);
-  free(map);
 }
 
 //Return 0 if bucket w/ same key is found, 1 if not found, 2 if the bucket is empty

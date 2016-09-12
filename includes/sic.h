@@ -24,9 +24,9 @@ typedef enum sc_e_rules
 
 typedef struct s_sic
 {
-  sc_consumer_t* input;
-  sc_hashmp_t* rules[SC_RL_COUNT];
-  sc_hashmp_t* save;
+  sc_consumer_t input;
+  sc_hashmp_t rules[SC_RL_COUNT];
+  sc_hashmp_t save;
   char _symbols[SC_RL_SYM_SIZE];
   char _err;
 } sic_t;
@@ -50,13 +50,13 @@ typedef struct sc_s_rl
   char* save;
 } sc_rl_t;
 
-sic_t* sc_create();
+sic_t* sc_init(sic_t*);
 int sc_load_file(sic_t*, const char*);
 int sc_add_srule(sic_t*, const char*, const char*);
 
 int sc_parse(sic_t*, const char*, unsigned);
 
-//destroy()
+//void sc_destroy(sic_t*);
 // -> free save = *VALUES + KEYS*
 
 ///Internal logic

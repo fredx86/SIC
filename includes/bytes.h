@@ -13,7 +13,9 @@ typedef struct sc_s_bytes
   sc_autoalloc_func _alloc_func;
 } sc_bytes_t;
 
+sc_bytes_t* sc_binit(sc_bytes_t*, const char*, unsigned, sc_autoalloc_func);
 sc_bytes_t* sc_bcreate(const char*, unsigned, sc_autoalloc_func);
+
 sc_bytes_t* sc_bcpy(sc_bytes_t*, const char*, unsigned);
 sc_bytes_t* sc_bapp(sc_bytes_t*, const char*, unsigned);
 sc_bytes_t* sc_bappb(sc_bytes_t*, const sc_bytes_t*);
