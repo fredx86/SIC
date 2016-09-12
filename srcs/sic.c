@@ -22,9 +22,9 @@ sic_t* sc_init(sic_t* sic)
 {
   sic->_err = 0;
   if (sc_hinit(&sic->rules[SC_RL_INTERNAL], 1024, &sc_jenkins_hash, SC_KY_STRING) == NULL ||
-    sc_hinit(&sic->rules[SC_RL_STRING], 1024, &sc_jenkins_hash, SC_KY_STRING) == NULL ||
-    sc_hinit(&sic->save, 1024, &sc_jenkins_hash, SC_KY_STRING) == NULL)
+    sc_hinit(&sic->rules[SC_RL_STRING], 1024, &sc_jenkins_hash, SC_KY_STRING) == NULL)
     return (NULL);
+  sic->save.buckets = NULL;
   return (_sc_set_intrl(sic));
 }
 
@@ -61,12 +61,18 @@ int sc_parse(sic_t* sic, const char* str, unsigned size)
     fprintf(stderr, "%s: No entry point @%s\n", SIC_INT_ERR, SIC_ENTRY);
     return (0);
   }
-  //TODO clear content of save !!!
-  if (sc_cinit(&sic->input, str, size) == NULL)
+  _sc_save_clear(sic);
+  if (sc_hinit(&sic->save, 1024, &sc_jenkins_hash, SC_KY_STRING) == NULL ||
+    sc_cinit(&sic->input, str, size) == NULL)
     return (0);
   result = _sc_eval_expr(sic, entry) && SIC_CSMR_IS_EOI((&sic->input)); //Why do I need 2 parenthesis for this to compile ?!!
   sc_cdestroy(&sic->input);
   return (result);
+}
+
+sc_list_t* sc_get(sic_t* sic, const char* key)
+{
+  return ((sc_list_t*)sc_hget(&sic->save, (const void*)key));
 }
 
 void sc_destroy(sic_t* sic)
@@ -75,8 +81,7 @@ void sc_destroy(sic_t* sic)
 
   for (i = 0; i < SC_RL_COUNT; ++i)
     sc_hdestroy(&sic->rules[i]);
-  //TODO free sic->save key + content !
-  sc_hdestroy(&sic->save);
+  _sc_save_clear(sic); //Freeing sic->save content !
 }
 
 int _sc_setrl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
@@ -129,9 +134,11 @@ int _sc_eval_rl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
     return (_sc_internal_err(sic, csmr, SIC_ERR_RULE_NOT_FOUND, rule->name));
   if (result && rule->save)
   {
-    if (!sc_cendb(&sic->input, "save", saved) || !_sc_save(sic, rule->save, saved))
+    if (!sc_cendb(&sic->input, "save", saved) || !_sc_save_add(sic, rule->save, saved))
       return (_sc_fatal_err(sic));
   }
+  if (!result && rule->save)
+    free(rule->save);
   return (result);
 }
 
@@ -321,7 +328,7 @@ int _sc_byte(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
   return (has_read);
 }
 
-int _sc_save(sic_t* sic, const char* key, sc_bytes_t* save)
+int _sc_save_add(sic_t* sic, const char* key, sc_bytes_t* save)
 {
   void* tmp;
   sc_list_t* list;
@@ -337,6 +344,20 @@ int _sc_save(sic_t* sic, const char* key, sc_bytes_t* save)
     list = (sc_list_t*)tmp;
   }
   return (sc_ladd(list, save) != NULL);
+}
+
+void _sc_save_clear(sic_t* sic)
+{
+  sc_hiterate(&sic->save, &_sc_save_free, NULL);
+  sc_hdestroy(&sic->save);
+}
+
+void _sc_save_free(void* bucket, void* na)
+{
+  (void)na;
+  struct sc_s_bcket* b = (struct sc_s_bcket*)bucket;
+  free((void*)b->key); //Fuck 'const' in that context
+  free(b->val);
 }
 
 //Call whenever there is an internal error (rule, ...)

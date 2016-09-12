@@ -21,6 +21,7 @@ void bytes()
   assert(strcmp(bytes.array, "ello worl") == 0);
   assert(sc_berase(&bytes, 0, 100) != NULL); //Erase as there is content
   assert(bytes.size == 0);
+  sc_bdestroy(&bytes);
 }
 
 void hashmap()
@@ -35,6 +36,7 @@ void hashmap()
   assert(sc_hadd(&string_map, "42", "ME") != NULL); //Standard replace
   assert(strcmp(sc_hget(&string_map, "42"), "UNIVERSE") != 0);
   assert(strcmp(sc_hget(&string_map, "42"), "ME") == 0);
+  sc_hdestroy(&string_map);
 
   //Default behaviour w/ pointer
   //TODO :)
@@ -49,6 +51,7 @@ void hashmap()
   assert(sc_hget(&collide_map, "THEO") != NULL);
   assert(strcmp(sc_hget(&collide_map, "THEO"), "I LIKE CAPS") == 0);
   assert(strcmp(sc_hget(&collide_map, "GUILLAUME"), "TWAT") == 0);
+  sc_hdestroy(&collide_map);
 }
 
 int main()

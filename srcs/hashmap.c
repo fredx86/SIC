@@ -13,7 +13,7 @@ sc_hashmp_t* sc_hinit(sc_hashmp_t* map, uint32_t size, sc_hashfunc func, enum sc
 sc_hashmp_t* sc_hadd(sc_hashmp_t* map, const void* key, void* value)
 {
   uint32_t index, r;
-  struct sc_s_bcket* tmp;
+  sc_bucket_t* tmp;
 
   index = SIC_HIDX(map, key);
   if ((r = _sc_hfind(&tmp, map->buckets[index], key, map->type)) == 0) //If found
@@ -33,20 +33,22 @@ int sc_hhas(sc_hashmp_t* map, const void* key)
 
 void* sc_hget(sc_hashmp_t* map, const void* key)
 {
-  struct sc_s_bcket* tmp;
+  sc_bucket_t* tmp;
 
   if (_sc_hfind(&tmp, map->buckets[SIC_HIDX(map, key)], key, map->type) == 0)
     return (tmp->val);
   return (NULL);
 }
 
-void sc_hdestroy(sc_hashmp_t* map)
+void sc_hiterate(sc_hashmp_t* map, sc_iterate_func func, void* param)
 {
-  uint32_t i = 0;
-  struct sc_s_bcket *tmp;
-  struct sc_s_bcket *tmp2;
+  uint32_t i;
+  sc_bucket_t *tmp;
+  sc_bucket_t *tmp2;
 
-  while (i < map->size)
+  if (map->buckets == NULL)
+    return;
+  for (i = 0; i < map->size; ++i)
   {
     if (map->buckets[i] != NULL)
     {
@@ -54,19 +56,25 @@ void sc_hdestroy(sc_hashmp_t* map)
       while (tmp != NULL)
       {
         tmp2 = tmp->next;
-        free(tmp);
+        func(tmp, param);
         tmp = tmp2;
       }
     }
-    ++i;
   }
+}
+
+void sc_hdestroy(sc_hashmp_t* map)
+{
+  if (map->buckets == NULL)
+    return;
+  sc_hiterate(map, &_sc_hfree, NULL);
   free(map->buckets);
 }
 
 //Return 0 if bucket w/ same key is found, 1 if not found, 2 if the bucket is empty
 //If found, then 'ret' parameter is set to the matching bucket
 //Otherwise, parameter is set to the last non-null element of the list
-int _sc_hfind(struct sc_s_bcket** ret, struct sc_s_bcket* bucket, const void* key, enum sc_e_key type)
+int _sc_hfind(sc_bucket_t** ret, sc_bucket_t* bucket, const void* key, enum sc_e_key type)
 {
   char found = (bucket ? 1 : 2);
 
@@ -86,9 +94,9 @@ int _sc_hfind(struct sc_s_bcket** ret, struct sc_s_bcket* bucket, const void* ke
   return (found);
 }
 
-struct sc_s_bcket* _sc_hadd(sc_hashmp_t* map, uint32_t index, struct sc_s_bcket* insert, const void* key, void* value)
+sc_bucket_t* _sc_hadd(sc_hashmp_t* map, uint32_t index, sc_bucket_t* insert, const void* key, void* value)
 {
-  struct sc_s_bcket* bucket;
+  sc_bucket_t* bucket;
 
   if ((bucket = malloc(sizeof(*bucket))) == NULL)
     return (sc_perr("malloc() -> _sc_hadd()"));
@@ -104,6 +112,12 @@ struct sc_s_bcket* _sc_hadd(sc_hashmp_t* map, uint32_t index, struct sc_s_bcket*
     insert->next = bucket;
   }
   return (bucket);
+}
+
+void _sc_hfree(void* bucket, void* na)
+{
+  (void)na;
+  free(bucket);
 }
 
 unsigned _sc_hkey_size(const void* key, enum sc_e_key type)
