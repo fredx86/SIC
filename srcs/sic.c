@@ -112,7 +112,7 @@ int _sc_eval_rl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
   }
   if (i == SC_RL_COUNT) //Out of bounds
     return (_sc_internal_err(sic, csmr, SIC_ERR_RULE_NOT_FOUND, rule->name));
-  if (rule->save)
+  if (result && rule->save)
   {
     if (!sc_cendb(&sic->input, "save", saved) || !_sc_save(sic, rule->save, saved))
       return (_sc_fatal_err(sic));
