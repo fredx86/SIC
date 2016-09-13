@@ -336,7 +336,7 @@ int _sc_byte(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
   return (has_read);
 }
 
-int _sc_save_add(sic_t* sic, const char* key, sc_bytes_t* save)
+int _sc_save_add(sic_t* sic, char* key, sc_bytes_t* save)
 {
   void* tmp;
   sc_list_t* list;
@@ -350,6 +350,7 @@ int _sc_save_add(sic_t* sic, const char* key, sc_bytes_t* save)
   else
   {
     list = (sc_list_t*)tmp;
+    free(key);
   }
   return (sc_ladd(list, save) != NULL);
 }

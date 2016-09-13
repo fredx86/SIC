@@ -85,7 +85,7 @@ int _sc_priority(sic_t*, sc_consumer_t*, sc_rlint_t*);
 
 int _sc_byte(sic_t*, sc_consumer_t*, sc_rlint_t*);
 
-int _sc_save_add(sic_t*, const char*, sc_bytes_t*);
+int _sc_save_add(sic_t*, char*, sc_bytes_t*);
 void _sc_save_remove(void*, void*);
 void _sc_save_clear(sic_t*);
 
