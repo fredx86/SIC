@@ -26,7 +26,6 @@ void sc_ldestroy(sc_list_t* list)
 {
   if (list->content)
     free(list->content);
-  free(list);
 }
 
 int _sc_lalloc(sc_list_t* list, unsigned size)

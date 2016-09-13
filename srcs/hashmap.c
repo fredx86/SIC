@@ -3,7 +3,7 @@
 sc_hashmp_t* sc_hinit(sc_hashmp_t* map, uint32_t size, sc_hashfunc func, enum sc_e_key key)
 {
   if ((map->buckets = calloc(size, sizeof(*map->buckets))) == NULL)
-    return (sc_perr("calloc() -> sc_hcreate()"));
+    return (sc_perr("calloc() -> sc_hinit()"));
   map->hash = func;
   map->type = key;
   map->size = size;
@@ -46,8 +46,6 @@ void sc_hiterate(sc_hashmp_t* map, sc_iterate_func func, void* param)
   sc_bucket_t *tmp;
   sc_bucket_t *tmp2;
 
-  if (map->buckets == NULL)
-    return;
   for (i = 0; i < map->size; ++i)
   {
     if (map->buckets[i] != NULL)
@@ -63,11 +61,15 @@ void sc_hiterate(sc_hashmp_t* map, sc_iterate_func func, void* param)
   }
 }
 
-void sc_hdestroy(sc_hashmp_t* map)
+void sc_hclear(sc_hashmp_t* map, int flag)
 {
-  if (map->buckets == NULL)
-    return;
-  sc_hiterate(map, &_sc_hfree, NULL);
+  sc_hiterate(map, &_sc_hfree, &flag);
+  memset(map->buckets, 0, sizeof(*map->buckets) * map->size);
+}
+
+void sc_hdestroy(sc_hashmp_t* map, int flag)
+{
+  sc_hiterate(map, &_sc_hfree, &flag);
   free(map->buckets);
 }
 
@@ -114,9 +116,16 @@ sc_bucket_t* _sc_hadd(sc_hashmp_t* map, uint32_t index, sc_bucket_t* insert, con
   return (bucket);
 }
 
-void _sc_hfree(void* bucket, void* na)
+void _sc_hfree(void* bucket, void* f)
 {
-  (void)na;
+  int* flag = (int*)f;
+  struct sc_s_bcket* b = (struct sc_s_bcket*)bucket;
+
+  if (f && *flag != 0)
+  {
+    free((void*)b->key); //Fuck 'const' in that context
+    free(b->val);
+  }
   free(bucket);
 }
 

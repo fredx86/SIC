@@ -36,7 +36,8 @@ void* sc_hget(sc_hashmp_t*, const void*);
 
 void sc_hiterate(sc_hashmp_t*, sc_iterate_func, void*);
 
-void sc_hdestroy(sc_hashmp_t*);
+void sc_hclear(sc_hashmp_t*, int);
+void sc_hdestroy(sc_hashmp_t*, int);
 
 uint32_t sc_jenkins_hash(const char*, unsigned);
 

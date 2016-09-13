@@ -80,7 +80,7 @@ int sc_ctxt(sc_consumer_t* consumer, const char* text, int nocase)
   unsigned size = strlen(text);
   sc_strcmp_func cmp[] = { &sc_strcmp, &sc_ncstrcmp };
   
-  if (cmp[nocase ? 1 : 0](SIC_CSMR_STR(consumer), consumer->bytes.size, text, size, size))
+  if (cmp[nocase ? 1 : 0](SIC_CSMR_STR(consumer), consumer->bytes.size - (unsigned)consumer->_ptr, text, size, size))
     return (SIC_CSMR_INCR(consumer, size));
   return (0);
 }
@@ -199,7 +199,7 @@ char* sc_cts(sc_consumer_t* consumer)
 
 void sc_cdestroy(sc_consumer_t* consumer)
 {
-  sc_hdestroy(&consumer->map);
+  sc_hdestroy(&consumer->map, 0);
   sc_bdestroy(&consumer->bytes);
 }
 

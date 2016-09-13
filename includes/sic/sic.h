@@ -16,17 +16,11 @@
 
 #define SIC_RETVAL(sic, x)      (sic->_err ? 0 : x)
 
-typedef enum sc_e_rules
-{
-  SC_RL_INTERNAL = 0,
-  SC_RL_STRING,
-  SC_RL_COUNT
-} sc_rules;
-
 typedef struct s_sic
 {
   sc_consumer_t input;
-  sc_hashmp_t rules[SC_RL_COUNT];
+  sc_hashmp_t internal;
+  sc_hashmp_t strings;
   sc_hashmp_t save;
   char _symbols[SIC_SYM_SIZE];
   char _err;
@@ -56,6 +50,8 @@ int sc_load_file(sic_t*, const char*);
 
 int sc_parse(sic_t*, const char*, unsigned);
 sc_list_t* sc_get(sic_t*, const char*);
+
+void sc_clear(sic_t*);
 
 void sc_destroy(sic_t*);
 
@@ -90,8 +86,8 @@ int _sc_priority(sic_t*, sc_consumer_t*, sc_rlint_t*);
 int _sc_byte(sic_t*, sc_consumer_t*, sc_rlint_t*);
 
 int _sc_save_add(sic_t*, const char*, sc_bytes_t*);
+void _sc_save_remove(void*, void*);
 void _sc_save_clear(sic_t*);
-void _sc_save_free(void*, void*);
 
 int _sc_fatal_err(sic_t*);
 int _sc_internal_err(sic_t*, sc_consumer_t*, const char*, const char*);
