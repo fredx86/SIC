@@ -4,7 +4,7 @@ num    /    /
 alpha    /    /
 word    /    /
 alnum    /    /
-eol    Newline ('\r\n', '\r' or \'n')    /
+eol    Newline    /
 |    Alternation    alpha | digit
 *    0+ Repetition    *alpha
 +    1+ Repetition    +alpha
