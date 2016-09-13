@@ -2,22 +2,25 @@
 
 Saving
 Implemention of a
-Context-free-grammar
+Context-free grammar
 
 ### What is it ?
 
-//TODO
+It is a context-free grammar, quite similar to an [EBNF](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_Form), which allows to parse an input given a set of rules.
+
+SIC add the possibility to save parts of your input from rules. Let's say you are parsing HTTP (why not?), and you want to get the method and headers only. Using SIC, you just have to implement it in your rules, and voilà! You can retrieve those easily. (See [C file](./examples/http_c.c) / [Rule file](./examples/http.rl))
 
 ### Install
 
-Just compile it with `make`
-//TODO
+`$> make`
+
+Then use the compiled file 'libsic.a' as any static library
 
 ### Syntax
 
 See [syntax file](./doc/syntax.txt)
 
-### Example
+### Simple example
 
 ```c
 sic_t sic;
@@ -31,6 +34,6 @@ else
   printf("SIC tells to fuck off !\n");
 ```
 
-Moar in [examples/](./examples)
+`$> make example` to get a functional example of a binary using SIC.
 
-Moreover, you can `make example` to get a functional example of a binary using SIC
+* Moar in [examples/](./examples)
