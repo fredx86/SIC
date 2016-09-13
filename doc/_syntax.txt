@@ -4,14 +4,15 @@ num    /    /
 alpha    /    /
 word    /    /
 alnum    /    /
-<expr> | <expr>    Or    alpha | digit
-*<expr>    0 and more expression    *alpha
-+<expr>    1 and more expression    +alpha
-"<string>"    String    "hello"
-`<string>`    No-case string    `hEllO`
-<expr>:<identifier>    Save expression using as identifier    alpha:my_alpha
-[ expr ]    Optional expression    [ ":" num ]
-( expr )    Priority expression    "a" ( "b" | "c" )
-$    Optionals whitespaces    "a" $ "b"
-~<byte>    Check for given byte    ~127
-eol    End Of Line: '\r\n', '\r' or \'n'    /
+eol    Newline ('\r\n', '\r' or \'n')    /
+|    Alternation    alpha | digit
+*    0+ Repetition    *alpha
++    1+ Repetition    +alpha
+" ... "    Terminal string    "hello"
+` ... `    Nocase terminal string    `hEllO`
+:    Saving    alpha:my_alpha
+[ ... ]    Optional    [ ":" num ]
+( ... )    Priority    "a" ( "b" | "c" )
+$    Whitespaces    "a" $ "b"
+~    Byte    ~127
+#    Range    #0-31
