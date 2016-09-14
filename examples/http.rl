@@ -1,12 +1,9 @@
-VALID_TKN_CHAR  = alnum | "!" | "#" | "$" | "%" | "&" | "'" | "*" | "+" | "-" | "." | "^" | "_" | "`" | "|" | "~"
-TOKEN           = +VALID_TKN_CHAR
-CRLF            = ~13 ~10
-ABSOLUTE_URL    = "http://" TOKEN [ ":" num ]
-URI             = "*" | ABSOLUTE_URL
-METHOD          = "GET" | "HEAD" | "POST" | "PUT" | "DELETE" | "TRACE" | "OPTIONS" | "CONNECT"
-HTTP_VERSION    = "HTTP/" num "." num
-REQUEST         = METHOD " " URI " " HTTP_VERSION
-HEADER          = TOKEN ":" $ TOKEN CRLF
-HEADERS         = *HEADER
+CTL             = #0-31 | ~127
 
-_main_          = REQUEST CRLF HEADERS CRLF
+
+CRLF            = ~13 ~10
+METHOD          = "GET" | "HEAD" | "POST" | "PUT" | "DELETE" | "TRACE" | "OPTIONS" | "CONNECT"
+
+
+
+_main_          = CTL

@@ -6,8 +6,7 @@ word    /    /
 alnum    /    /
 eol    Newline    /
 |    Alternation    alpha | digit
-*    0+ Repetition    *alpha
-+    1+ Repetition    +alpha
+*    Repetition    *alpha
 " ... "    Terminal string    "hello"
 ` ... `    Nocase terminal string    `hEllO`
 :    Saving    alpha:my_alpha

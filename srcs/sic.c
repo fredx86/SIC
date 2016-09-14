@@ -12,9 +12,9 @@ static sc_rlint_t _int_rules[] = {
   { "word",     "WORD",             &_sc_word,          0 },
   { "alnum",    "ALPHA_NUMERIC",    &_sc_alnum,         0 },
   { "eol",      "END_OF_LINE",      &_sc_eol,           0 },
-  { "*",        "OPT_MULTIPLE",     &_sc_opt_multiple,  1 },
-  { "+",        "ONE_MULTIPLE",     &_sc_one_multiple,  1 },
+  { "*",        "MULTIPLE",         &_sc_multiple,      1 },
   { "~",        "BYTE",             &_sc_byte,          1 },
+  { "#",        "BETWEEN",          &_sc_btwn,          1 },
   { NULL, NULL, NULL, 0 }
 };
 
@@ -310,14 +310,19 @@ int _sc_eol(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
   return (sc_csome(&sic->input, "\r\n"));
 }
 
-int _sc_opt_multiple(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
+int _sc_multiple(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 {
-  return (_sc_rl_multiple(sic, csmr, rlint, 0));
-}
+  sc_rl_t rule;
+  intptr_t save;
 
-int _sc_one_multiple(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
-{
-  return (_sc_rl_multiple(sic, csmr, rlint, 1));
+  (void)rlint;
+  if (!_sc_setrl(sic, csmr, &rule))
+    return (0);
+  save = csmr->_ptr;
+  while (_sc_eval_rl(sic, csmr, &rule))
+    csmr->_ptr = save;
+  free(rule.name);
+  return (SIC_RETVAL(sic, 1));
 }
 
 int _sc_byte(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
@@ -334,6 +339,24 @@ int _sc_byte(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
   has_read = sc_cchar(&sic->input, atoi(bytes));
   free(bytes);
   return (has_read);
+}
+
+int _sc_btwn(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
+{
+  char x, y;
+  char* str;
+
+  if (!_sc_tkn_func(sic, csmr, rlint, &sc_cdigit, &str))
+    return (0);
+  x = (char)atoi(str);
+  free(str);
+  if (!sc_cchar(csmr, '-'))
+    return (_sc_internal_err(sic, csmr, SIC_ERR_RULE_ERRONEOUS, rlint->name));
+  if (!_sc_tkn_func(sic, csmr, rlint, &sc_cdigit, &str))
+    return (0);
+  y = (char)atoi(str);
+  free(str);
+  return (sc_crange(&sic->input, x, y));
 }
 
 int _sc_save_add(sic_t* sic, char* key, sc_bytes_t* save)
@@ -426,28 +449,17 @@ int _sc_tkn_cntnt(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint, const char
   return (1);
 }
 
-//Evaluate the next given rule. Loop on the input until the rule stops to fit.
-//MUST fit at least 'n' times
-int _sc_rl_multiple(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint, unsigned n)
+//Recover token using a consumer function
+//Token is stored in parameter str
+int _sc_tkn_func(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint, sc_csmrfunc func, char** str)
 {
-  unsigned i;
-  sc_rl_t rule;
-  intptr_t save;
-
-  (void)rlint;
-  if (!_sc_setrl(sic, csmr, &rule))
-    return (0);
-  save = csmr->_ptr;
-  for (i = 0; i < n; ++i)
-  {
-    if (!_sc_eval_rl(sic, csmr, &rule))
-      return (0);
-    csmr->_ptr = save;
-  }
-  while (_sc_eval_rl(sic, csmr, &rule))
-    csmr->_ptr = save;
-  free(rule.name);
-  return (SIC_RETVAL(sic, 1));
+  if (!sc_cstart(csmr, "tkn"))
+    return (_sc_fatal_err(sic));
+  if (!sc_cmultiples(csmr, func))
+    return (_sc_internal_err(sic, csmr, SIC_ERR_RULE_ERRONEOUS, rlint->name));
+  if (!sc_cends(csmr, "tkn", str))
+    return (_sc_fatal_err(sic));
+  return (1);
 }
 
 int _sc_eval_btwn(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint, const char* tokens, char identical)
