@@ -314,14 +314,18 @@ int _sc_multiple(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 {
   sc_rl_t rule;
   intptr_t save;
+  char rule_correct = 1;
 
   (void)rlint;
-  if (!_sc_setrl(sic, csmr, &rule))
-    return (0);
   save = csmr->_ptr;
-  while (_sc_eval_rl(sic, csmr, &rule))
+  while (rule_correct)
+  {
     csmr->_ptr = save;
-  free(rule.name);
+    if (!_sc_setrl(sic, csmr, &rule))
+      return (0);
+    rule_correct = _sc_eval_rl(sic, csmr, &rule);
+    free(rule.name);
+  }
   return (SIC_RETVAL(sic, 1));
 }
 
