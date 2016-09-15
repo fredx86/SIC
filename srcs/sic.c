@@ -23,7 +23,8 @@ sic_t* sc_init(sic_t* sic)
   sic->_err = 0;
   if (sc_hinit(&sic->internal, 1024, &sc_jenkins_hash, SC_KY_STRING) == NULL ||
     sc_hinit(&sic->strings, 1024, &sc_jenkins_hash, SC_KY_STRING) == NULL ||
-    sc_hinit(&sic->save, 1024, &sc_jenkins_hash, SC_KY_STRING) == NULL)
+    sc_hinit(&sic->save, 1024, &sc_jenkins_hash, SC_KY_STRING) == NULL ||
+    sc_binit(&sic->_last_err, NULL, 0, NULL) == NULL)
     return (NULL);
   return (_sc_set_intrl(sic));
 }
@@ -35,6 +36,7 @@ int sc_load_file(sic_t* sic, const char* filepath)
   char buff[4096];
   sc_consumer_t csmr;
 
+  sc_hclear(&sic->strings, 1);
   if ((file = fopen(filepath, "r")) == NULL ||
     sc_cinit(&csmr, NULL, 0) == NULL)
     return (0);
@@ -55,7 +57,7 @@ int sc_parse(sic_t* sic, const char* str, unsigned size)
   char result;
   char* entry;
 
-  sic->_err = 0;
+  _sc_reset(sic);
   if ((entry = sc_hget(&sic->strings, SIC_ENTRY)) == NULL)
   {
     fprintf(stderr, "%s: No entry point @%s\n", SIC_INT_ERR, SIC_ENTRY);
@@ -73,18 +75,21 @@ sc_list_t* sc_get(sic_t* sic, const char* key)
   return ((sc_list_t*)sc_hget(&sic->save, (const void*)key));
 }
 
-void sc_clear(sic_t* sic)
-{
-  sc_hclear(&sic->strings, 1);
-  _sc_save_clear(sic);
-}
-
 void sc_destroy(sic_t* sic)
 {
   _sc_save_clear(sic);
   sc_hdestroy(&sic->save, 0);
   sc_hdestroy(&sic->strings, 1);
   sc_hdestroy(&sic->internal, 0);
+  sc_bdestroy(&sic->_last_err);
+}
+
+void _sc_reset(sic_t* sic)
+{
+  sic->_err = 0;
+  sic->_err_ptr = 0;
+  sic->last_error = NULL;
+  _sc_save_clear(sic);
 }
 
 int _sc_setrl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
@@ -146,6 +151,12 @@ int _sc_eval_rl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
     sc_bdestroy(saved);
     free(saved);
     free(rule->save);
+  }
+  if (sic->_err_ptr <= sic->input._ptr && i == 1 && !result) //If string rule
+  {
+    sic->_err_ptr = csmr->_ptr;
+    sc_bcpy(&sic->_last_err, rule->name, strlen(rule->name) + 1);
+    sic->last_error = sic->_last_err.array;
   }
   return (result);
 }

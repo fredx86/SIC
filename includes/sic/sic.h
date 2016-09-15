@@ -22,8 +22,11 @@ typedef struct s_sic
   sc_hashmp_t internal;
   sc_hashmp_t strings;
   sc_hashmp_t save;
+  char* last_error;
+  sc_bytes_t _last_err;
   char _symbols[SIC_SYM_SIZE];
   char _err;
+  intptr_t _err_ptr;
 } sic_t;
 
 struct sc_s_rl;
@@ -51,11 +54,11 @@ int sc_load_file(sic_t*, const char*);
 int sc_parse(sic_t*, const char*, unsigned);
 sc_list_t* sc_get(sic_t*, const char*);
 
-void sc_clear(sic_t*);
-
 void sc_destroy(sic_t*);
 
 ///Internal logic
+
+void _sc_reset(sic_t*);
 
 int _sc_setrl(sic_t*, sc_consumer_t*, sc_rl_t*);
 

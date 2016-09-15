@@ -1,2 +1,1 @@
 * Implement HTTP Rules as example: https://www.w3.org/Protocols/HTTP/1.0/spec.html
-* Error handling (sic->last_rule)

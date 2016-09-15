@@ -49,7 +49,7 @@ int main(int ac, char **av)
   }
   else
   {
-    printf("Parse KO. Twat.\n");
+    printf("Parse KO. Twat. Last rule: %s\n", sic.last_error);
   }
   sc_destroy(&sic);
   return (0);
