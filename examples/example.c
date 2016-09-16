@@ -50,7 +50,7 @@ int main(int ac, char **av)
   else
   {
     printf("Parse KO. Twat.\n");
-    sc_error(&sic, 0);
+    //sc_error(&sic, 0); TODO
   }
   sc_destroy(&sic);
   return (0);

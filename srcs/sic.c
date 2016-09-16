@@ -67,7 +67,7 @@ int sc_parse(sic_t* sic, const char* str, unsigned size)
     return (0);
   if (_sc_eval_expr(sic, entry) && SIC_CSMR_IS_EOI((&sic->input)))
     return (1);
-  _sc_last_err(sic, SIC_ERR_EOI_MISSING, SIC_EOI);
+  //TODO Error: end of input
   return (0);
 }
 
@@ -170,8 +170,6 @@ int _sc_eval_rl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
     free(saved);
     free(rule->save);
   }
-  if (!result && i == 1 && rule->name[0] == SIC_IMPORTANT) //If string rule, save error
-    _sc_last_err(sic, SIC_ERR_RULE_ERRONEOUS, rule->name);
   return (result);
 }
 
@@ -450,17 +448,6 @@ int _sc_fatal_err(sic_t* sic)
 {
   sic->_err = 1;
   return (0);
-}
-
-void _sc_last_err(sic_t* sic, char* err, const char* param)
-{
-  if ((sic->error.err == NULL || sic->error.pos < sic->input._ptr))
-  {
-    sic->error.err = err;
-    sic->error.pos = sic->input._ptr;
-    sc_bcpy(&sic->error._last_err, param, strlen(param) + 1);
-    sic->error.param = sic->error._last_err.array;
-  }
 }
 
 //Use after a rule => Return content between 2 rule tokens

@@ -12,10 +12,8 @@
 #define SIC_ERR_EOI_MISSING     "Expected end of input"
 #define SIC_ERR_RULE_NOT_FOUND  "Rule not found"
 #define SIC_ERR_RULE_ERRONEOUS  "Rule is erroneous"
-#define SIC_EOI                 "EOI"
 
 #define SIC_SYM_SIZE            15
-#define SIC_IMPORTANT           '_'
 
 #define SIC_RETVAL(sic, x)      (sic->_err ? 0 : x)
 
@@ -105,7 +103,6 @@ void _sc_save_clear(sic_t*);
 
 int _sc_fatal_err(sic_t*);
 int _sc_internal_err(sic_t*, sc_consumer_t*, const char*, const char*);
-void _sc_last_err(sic_t*, char*, const char*);
 
 int _sc_tkn_cntnt(sic_t*, sc_consumer_t*, sc_rlint_t*, const char*, char, char**);
 int _sc_tkn_func(sic_t*, sc_consumer_t*, sc_rlint_t*, sc_csmrfunc, char**);

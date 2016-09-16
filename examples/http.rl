@@ -34,11 +34,10 @@ EXTRA           = "!" | "*" | "'" | "(" | ")" | ","
 SAFE            = "$" | "-" | "_" | "."
 UNSAFE		      = CTL | SP | ~34 | "#" | "%" | "<" | ">"
 
-_SP             = SP
-_METHOD         = "GET" | "HEAD" | "POST" | "PUT" | "DELETE" | "TRACE" | "OPTIONS" | "CONNECT"
-_REQUEST_URI    = "*" | ABSOLUTE_URI | ABS_PATH
-_HTTP_VERSION   = "HTTP/" num "." num
+METHOD          = "GET" | "HEAD" | "POST" | "PUT" | "DELETE" | "TRACE" | "OPTIONS" | "CONNECT"
+REQUEST_URI     = "*" | ABSOLUTE_URI | ABS_PATH
+HTTP_VERSION    = "HTTP/" num "." num
 
-_REQUEST_LINE   = _METHOD:method _SP _REQUEST_URI:uri _SP _HTTP_VERSION:version
+_REQUEST_LINE   = METHOD:method SP REQUEST_URI:uri SP HTTP_VERSION:version
 
 _main_          = _REQUEST_LINE
