@@ -24,7 +24,8 @@ sic_t* sc_init(sic_t* sic)
   if (sc_hinit(&sic->internal, 1024, &sc_jenkins_hash, SC_KY_STRING) == NULL ||
     sc_hinit(&sic->strings, 1024, &sc_jenkins_hash, SC_KY_STRING) == NULL ||
     sc_hinit(&sic->save, 1024, &sc_jenkins_hash, SC_KY_STRING) == NULL ||
-    sc_binit(&sic->_last_err, NULL, 0, NULL) == NULL)
+    sc_cinit(&sic->input, NULL, 0) == NULL ||
+    sc_binit(&sic->error._last_err, NULL, 0, NULL) == NULL)
     return (NULL);
   return (_sc_set_intrl(sic));
 }
@@ -54,7 +55,6 @@ int sc_load_file(sic_t* sic, const char* filepath)
 
 int sc_parse(sic_t* sic, const char* str, unsigned size)
 {
-  char result;
   char* entry;
 
   _sc_reset(sic);
@@ -63,16 +63,32 @@ int sc_parse(sic_t* sic, const char* str, unsigned size)
     fprintf(stderr, "%s: No entry point @%s\n", SIC_INT_ERR, SIC_ENTRY);
     return (0);
   }
-  if (sc_cinit(&sic->input, str, size) == NULL)
+  if (sc_cset(&sic->input, str, size) == NULL)
     return (0);
-  result = _sc_eval_expr(sic, entry) && SIC_CSMR_IS_EOI((&sic->input)); //Why do I need 2 parenthesis for this to compile ?!!
-  sc_cdestroy(&sic->input);
-  return (result);
+  if (_sc_eval_expr(sic, entry) && SIC_CSMR_IS_EOI((&sic->input)))
+    return (1);
+  _sc_last_err(sic, SIC_ERR_EOI_MISSING, SIC_EOI);
+  return (0);
 }
 
 sc_list_t* sc_get(sic_t* sic, const char* key)
 {
   return ((sc_list_t*)sc_hget(&sic->save, (const void*)key));
+}
+
+void sc_error(sic_t* sic, char flag)
+{
+  unsigned i = 0;
+
+  if (sic->_err)
+    return;
+  fprintf(stderr, "error:%u: %s (%s)\n\t", (unsigned)sic->error.pos, sic->error.err, sic->error.param);
+  fflush(stderr);
+  sc_bprint(&sic->input.bytes, stderr, flag);
+  fputs("\n\t", stderr);
+  for (i = 0; i < sic->error.pos; ++i)
+    fputc(' ', stderr);
+  fputs("^\n", stderr);
 }
 
 void sc_destroy(sic_t* sic)
@@ -81,14 +97,16 @@ void sc_destroy(sic_t* sic)
   sc_hdestroy(&sic->save, 0);
   sc_hdestroy(&sic->strings, 1);
   sc_hdestroy(&sic->internal, 0);
-  sc_bdestroy(&sic->_last_err);
+  sc_bdestroy(&sic->error._last_err);
+  sc_cdestroy(&sic->input);
 }
 
 void _sc_reset(sic_t* sic)
 {
   sic->_err = 0;
-  sic->_err_ptr = 0;
-  sic->last_error = NULL;
+  sic->error.pos = 0;
+  sic->error.err = NULL;
+  sic->error.param = NULL;
   _sc_save_clear(sic);
 }
 
@@ -152,12 +170,8 @@ int _sc_eval_rl(sic_t* sic, sc_consumer_t* csmr, sc_rl_t* rule)
     free(saved);
     free(rule->save);
   }
-  if (sic->_err_ptr <= sic->input._ptr && i == 1 && !result) //If string rule
-  {
-    sic->_err_ptr = csmr->_ptr;
-    sc_bcpy(&sic->_last_err, rule->name, strlen(rule->name) + 1);
-    sic->last_error = sic->_last_err.array;
-  }
+  if (!result && i == 1 && rule->name[0] == SIC_IMPORTANT) //If string rule, save error
+    _sc_last_err(sic, SIC_ERR_RULE_ERRONEOUS, rule->name);
   return (result);
 }
 
@@ -436,6 +450,17 @@ int _sc_fatal_err(sic_t* sic)
 {
   sic->_err = 1;
   return (0);
+}
+
+void _sc_last_err(sic_t* sic, char* err, const char* param)
+{
+  if ((sic->error.err == NULL || sic->error.pos < sic->input._ptr))
+  {
+    sic->error.err = err;
+    sic->error.pos = sic->input._ptr;
+    sc_bcpy(&sic->error._last_err, param, strlen(param) + 1);
+    sic->error.param = sic->error._last_err.array;
+  }
 }
 
 //Use after a rule => Return content between 2 rule tokens

@@ -9,12 +9,23 @@
 #define SIC_STR_WARN            "SIC Warning"
 #define SIC_ERR_RULE_MISSING    "Expected rule"
 #define SIC_ERR_SAVE_MISSING    "Expected save identifier"
+#define SIC_ERR_EOI_MISSING     "Expected end of input"
 #define SIC_ERR_RULE_NOT_FOUND  "Rule not found"
 #define SIC_ERR_RULE_ERRONEOUS  "Rule is erroneous"
+#define SIC_EOI                 "EOI"
 
 #define SIC_SYM_SIZE            15
+#define SIC_IMPORTANT           '_'
 
 #define SIC_RETVAL(sic, x)      (sic->_err ? 0 : x)
+
+typedef struct sc_s_err
+{
+  char* err;
+  char* param;
+  intptr_t pos;
+  sc_bytes_t _last_err;
+} sc_err;
 
 typedef struct s_sic
 {
@@ -22,11 +33,9 @@ typedef struct s_sic
   sc_hashmp_t internal;
   sc_hashmp_t strings;
   sc_hashmp_t save;
-  char* last_error;
-  sc_bytes_t _last_err;
+  sc_err error;
   char _symbols[SIC_SYM_SIZE];
   char _err;
-  intptr_t _err_ptr;
 } sic_t;
 
 struct sc_s_rl;
@@ -53,6 +62,8 @@ int sc_load_file(sic_t*, const char*);
 
 int sc_parse(sic_t*, const char*, unsigned);
 sc_list_t* sc_get(sic_t*, const char*);
+
+void sc_error(sic_t*, char);
 
 void sc_destroy(sic_t*);
 
@@ -94,6 +105,7 @@ void _sc_save_clear(sic_t*);
 
 int _sc_fatal_err(sic_t*);
 int _sc_internal_err(sic_t*, sc_consumer_t*, const char*, const char*);
+void _sc_last_err(sic_t*, char*, const char*);
 
 int _sc_tkn_cntnt(sic_t*, sc_consumer_t*, sc_rlint_t*, const char*, char, char**);
 int _sc_tkn_func(sic_t*, sc_consumer_t*, sc_rlint_t*, sc_csmrfunc, char**);

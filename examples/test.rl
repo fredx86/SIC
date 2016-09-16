@@ -1,9 +1,0 @@
-ROAD_TYPE     = `avenue` | `road`
-WORDS         = word [*($ word)] $
-ROAD_NUMBER   = num
-ROAD          = ROAD_NUMBER:number $ ROAD_TYPE $ WORDS:road
-ZIPCODE       = digit digit digit digit
-CITY          = WORDS
-SEPARATOR     = "," | ";"
-ADDRESS       = ROAD SEPARATOR $ ZIPCODE:zipcode $ CITY:city
-_main_        = ADDRESS

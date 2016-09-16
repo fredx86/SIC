@@ -15,3 +15,6 @@ eol    Newline    /
 $    Whitespaces    "a" $ "b"
 ~    Byte    ~127
 #    Range    #0-31
+
+Rules that contains a '_' as prefix name are the only one considered for error display
+A valid rule name is an identifier. Identifier are defined as ( alpha | '_' ) *( alphanum | '_' )
