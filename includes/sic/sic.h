@@ -92,6 +92,7 @@ int _sc_alnum(sic_t*, sc_consumer_t*, sc_rlint_t*);
 int _sc_eol(sic_t*, sc_consumer_t*, sc_rlint_t*);
 
 int _sc_multiple(sic_t*, sc_consumer_t*, sc_rlint_t*);
+int _sc_one_multiple(sic_t*, sc_consumer_t*, sc_rlint_t*);
 int _sc_priority(sic_t*, sc_consumer_t*, sc_rlint_t*);
 
 int _sc_byte(sic_t*, sc_consumer_t*, sc_rlint_t*);
@@ -104,6 +105,7 @@ void _sc_save_clear(sic_t*);
 int _sc_fatal_err(sic_t*);
 int _sc_internal_err(sic_t*, sc_consumer_t*, const char*, const char*);
 
+int _sc_rl_multiple(sic_t*, sc_consumer_t*, sc_rlint_t*, unsigned);
 int _sc_tkn_cntnt(sic_t*, sc_consumer_t*, sc_rlint_t*, const char*, char, char**);
 int _sc_tkn_func(sic_t*, sc_consumer_t*, sc_rlint_t*, sc_csmrfunc, char**);
 int _sc_eval_btwn(sic_t*, sc_consumer_t*, sc_rlint_t*, const char*, char);

@@ -13,6 +13,7 @@ static sc_rlint_t _int_rules[] = {
   { "alnum",    "ALPHA_NUMERIC",    &_sc_alnum,         0 },
   { "eol",      "END_OF_LINE",      &_sc_eol,           0 },
   { "*",        "MULTIPLE",         &_sc_multiple,      1 },
+  { "+",        "ONE_MULTIPLE",     &_sc_one_multiple,  1 },
   { "~",        "BYTE",             &_sc_byte,          1 },
   { "#",        "BETWEEN",          &_sc_btwn,          1 },
   { NULL, NULL, NULL, 0 }
@@ -335,21 +336,12 @@ int _sc_eol(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 
 int _sc_multiple(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
 {
-  sc_rl_t rule;
-  intptr_t save;
-  char rule_correct = 1;
+  return (_sc_rl_multiple(sic, csmr, rlint, 0));
+}
 
-  (void)rlint;
-  save = csmr->_ptr;
-  while (rule_correct)
-  {
-    csmr->_ptr = save;
-    if (!_sc_setrl(sic, csmr, &rule))
-      return (0);
-    rule_correct = _sc_eval_rl(sic, csmr, &rule);
-    free(rule.name);
-  }
-  return (SIC_RETVAL(sic, 1));
+int _sc_one_multiple(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
+{
+  return (_sc_rl_multiple(sic, csmr, rlint, 1));
 }
 
 int _sc_byte(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint)
@@ -448,6 +440,29 @@ int _sc_fatal_err(sic_t* sic)
 {
   sic->_err = 1;
   return (0);
+}
+
+//Evaluate the next given rule. Loop on the input until the rule stops to fit.
+//MUST fit at least 'n' times
+int _sc_rl_multiple(sic_t* sic, sc_consumer_t* csmr, sc_rlint_t* rlint, unsigned n)
+{
+  sc_rl_t rule;
+  intptr_t save;
+  unsigned i = 0;
+  char rule_correct = 1;
+
+  (void)rlint;
+  save = csmr->_ptr;
+  while (rule_correct)
+  {
+    csmr->_ptr = save;
+    if (!_sc_setrl(sic, csmr, &rule))
+      return (0);
+    rule_correct = _sc_eval_rl(sic, csmr, &rule);
+    free(rule.name);
+    ++i;
+  }
+  return (i >= n ? SIC_RETVAL(sic, 1) : 0);
 }
 
 //Use after a rule => Return content between 2 rule tokens

@@ -1,20 +1,27 @@
-   Rule           Brief explanation               Example       
- --------- -------------------------------- ------------------- 
-  digit     /                                /                  
-  num       /                                /                  
-  alpha     /                                /                  
-  word      /                                /                  
-  alnum     /                                /                  
-  eol       Newline                          /                  
-  |         Alternation                      alpha | digit      
-  *         0+ Repetition                    *alpha             
-  +         1+ Repetition                    +alpha             
-  " ... "   Terminal string                  "hello"            
-  ` ... `   Nocase terminal string           `hEllO`            
-  :         Saving                           alpha:my_alpha     
-  [ ... ]   Optional                         [ ":" num ]        
-  ( ... )   Priority                         "a" ( "b" | "c" )  
-  $         Whitespaces                      "a" $ "b"          
-  ~         Byte                             ~127               
-  #         Range                            #0-31              
-  
+## Syntax ##
+
+   Rule       Brief explanation           Example       
+ --------- ------------------------ ------------------- 
+  digit     /                        /                  
+  num       /                        /                  
+  alpha     /                        /                  
+  word      /                        /                  
+  alnum     /                        /                  
+  eol       Newline                  /                  
+  |         Alternation              alpha | digit      
+  *         0+ Repetition            *alpha             
+  +         1+ Repetition            +alpha             
+  " ... "   Terminal string          "hello"            
+  ` ... `   Nocase terminal string   `hEllO`            
+  :         Saving                   alpha:my_alpha     
+  [ ... ]   Optional                 [ ":" num ]        
+  ( ... )   Priority                 "a" ( "b" | "c" )  
+  $         Whitespaces              "a" $ "b"          
+  ~         Byte                     ~127               
+  #         Range                    #0-31              
+
+
+## Infos ##
+
+* The entry point for rules is the '_main_' rule (See examples)
+* Rules MUST be a valid identifier ("an identifier is a combination of alphanumeric characters, the first being a letter of the alphabet or an underline, and the remaining being any letter of the alphabet, any numeric digit, or the underline")

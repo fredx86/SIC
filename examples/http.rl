@@ -19,7 +19,7 @@ SEGMENT       = *PCHAR
 PARAMS        = PARAM *( ";" PARAM )
 PARAM         = *( PCHAR | "/" )
 
-SCHEME        = ( alpha | digit | "+" | "-" | "." ) *( alpha | digit | "+" | "-" | "." )
+SCHEME        = +( alpha | digit | "+" | "-" | "." )
 NET_LOC       = *( PCHAR | ";" | "?" )
 QUERY         = *( UCHAR | RESERVED )
 FRAGMENT      = *( UCHAR | RESERVED )
@@ -38,6 +38,6 @@ METHOD          = "GET" | "HEAD" | "POST" | "PUT" | "DELETE" | "TRACE" | "OPTION
 REQUEST_URI     = "*" | ABSOLUTE_URI | ABS_PATH
 HTTP_VERSION    = "HTTP/" num "." num
 
-_REQUEST_LINE   = METHOD:method SP REQUEST_URI:uri SP HTTP_VERSION:version
+REQUEST_LINE    = METHOD:method SP REQUEST_URI:uri SP HTTP_VERSION:version
 
-_main_          = _REQUEST_LINE
+_main_          = REQUEST_LINE

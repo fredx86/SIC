@@ -26,9 +26,11 @@ See [syntax file](./doc/syntax.txt)
 sic_t sic;
 char* check_it = "Am I Ok ?";
 
-if (sc_init(&sic) == NULL || sc_load_file(&sic, "rules.rl") == 0)
+if (sc_init(&sic) == NULL) //Initialize sic
   return (1);
-if (sc_parse(&sic, check_it, strlen(check_it)))
+if (sc_load_file(&sic, "rules.rl") == 0) //Load rules
+  return (1);
+if (sc_parse(&sic, check_it, strlen(check_it))) //Try parse input using rules
   printf("SIC tells it's OK !\n");
 else
   printf("SIC tells to fuck off !\n");
@@ -37,3 +39,8 @@ else
 `$> make example` to get a functional example of a binary using SIC.
 
 * Moar in [examples/](./examples)
+
+### Prerequisites
+
+* GCC-compatible compiler
+* make
