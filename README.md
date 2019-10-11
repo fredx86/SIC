@@ -4,6 +4,11 @@ Saving
 Implemention of a
 Context-free grammar
 
+## Disclaimer
+This was done as a side-project when I was a student, feel free to explore.  
+However, it is in no way a finished product, or even a product at all. Also, cursing.  
+Bad me.
+
 ### What is it ?
 
 It is a context-free grammar, quite similar to an [EBNF](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_Form), which allows to parse an input given a set of rules.
